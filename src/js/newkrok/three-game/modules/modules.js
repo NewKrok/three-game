@@ -1,0 +1,4 @@
+export const MODULE_ID = {
+  OCTREE: "OCTREE",
+  PROJECTILES: "PROJECTILES",
+};
