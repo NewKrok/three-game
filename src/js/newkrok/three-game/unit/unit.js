@@ -208,6 +208,11 @@ export const createCharacter = ({
         character.velocity.y = config.jumpForce;
         character.isJumpTriggered = true;
       },
+      teleportTo: (position) => character.playerCollider.translate(position),
+      setRotation: (rotation) => {
+        character.viewRotation = rotation;
+        character.model.rotation.y = Math.PI - character.viewRotation + Math.PI;
+      },
       getSocket: (socketId) => sockets[socketId],
       update: onUpdate,
       updateLookAtPosition: ({ position, rotation }) => {
