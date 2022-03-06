@@ -1,11 +1,10 @@
 import * as THREE from "three";
 
-import { EffectId, effectsConfig } from "../effects-config";
 import {
   getGLTFModel,
   getTexture,
   loadAssets,
-} from "../three-utils/assets/assets";
+} from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
 
 import { createCharacter } from "./unit/unit";
 import { createParticleSystem } from "@newkrok/three-particles/src/js/effects/three-particles";
@@ -254,14 +253,14 @@ const applyConfigToWorld = ({
           child.visible = false;
         }
 
-        if (child.name.includes("Smoke")) {
+        /*if (child.name.includes("Smoke")) {
           setTimeout(() => {
             const smokeEffect = createParticleSystem(
               effectsConfig[EffectId.SMOKE]
             );
             child.add(smokeEffect);
           }, 100);
-        }
+        }*/
 
         /*if (child.name.includes("Crate")) {
           const destroyable = createDestroyable({

@@ -1,5 +1,5 @@
 import { MODULE_ID } from "../modules";
-import { Octree } from "three/examples/jsm/math/Octree";
+import { Octree } from "three/examples/jsm/math/Octree.js";
 
 const create = ({ config, scene }) => {
   const worldOctree = new Octree();

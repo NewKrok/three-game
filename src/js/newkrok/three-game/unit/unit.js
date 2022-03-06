@@ -3,9 +3,9 @@ import * as THREE from "three";
 import {
   getFBXModel,
   getFBXSkeletonAnimation,
-} from "../../three-utils/assets/assets.js";
+} from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
 
-import { Capsule } from "three/examples/jsm/math/capsule";
+import { Capsule } from "three/examples/jsm/math/capsule.js";
 import { MODULE_ID } from "../modules/modules.js";
 import { ModelSocketId } from "./unit-enums.js";
 

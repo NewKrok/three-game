@@ -1,11 +1,10 @@
-import * as CANNON from "cannon-es";
 import * as THREE from "three";
 
-import { EffectId, effectsConfig } from "../effects-config";
+/*import { EffectId, effectsConfig } from "../effects-config";
 import {
   createParticleSystem,
   destroyParticleSystem,
-} from "@newkrok/three-particles/src/js/effects/three-particles";
+} from "@newkrok/three-particles/src/js/effects/three-particles";*/
 
 //import { getBulletColliders, getColliders } from "../../main.js";
 
@@ -15,8 +14,8 @@ import {
 //import { getCamera } from "../../game-engine/camera/camera.js";
 //import { playAudio } from "../../game-engine/audio/audio.js";
 
-const bulletShape = new CANNON.Sphere(0.02);
-const bulletGeometry = new THREE.SphereGeometry(bulletShape.radius, 8, 8);
+//const bulletShape = new CANNON.Sphere(0.02);
+//const bulletGeometry = new THREE.SphereGeometry(bulletShape.radius, 8, 8);
 const shootVelocity = 0.95;
 const material = new THREE.MeshLambertMaterial({ color: 0xffff00 });
 
@@ -24,7 +23,7 @@ let bullets = [];
 let bulletIndex = 0;
 
 export const shoot = ({ scene, bulletStartPosition, aimingDirection }) => {
-  const bulletMesh = new THREE.Mesh(bulletGeometry, material);
+  /*const bulletMesh = new THREE.Mesh(bulletGeometry, material);
   bulletMesh.castShadow = true;
   bulletMesh.receiveShadow = false;
   bulletMesh.position.copy(bulletStartPosition);
@@ -39,8 +38,7 @@ export const shoot = ({ scene, bulletStartPosition, aimingDirection }) => {
     mesh: bulletMesh,
     direction: aimingDirection,
     bulletEffect,
-  });
-
+  });*/
   /* playAudio({
     audioId: AudioId.PistolShot,
     cacheId: AudioId.PistolShot,
@@ -48,7 +46,7 @@ export const shoot = ({ scene, bulletStartPosition, aimingDirection }) => {
 };
 
 export const updateBullets = ({ scene, colliders, destroyables }) => {
-  const bulletsToRemove = [];
+  /*const bulletsToRemove = [];
 
   bullets.forEach(({ mesh, direction }) => {
     const { x, y, z } = mesh.position;
@@ -87,8 +85,8 @@ export const updateBullets = ({ scene, colliders, destroyables }) => {
           destroyParticleSystem(bulletExplosionEffect);
           destroyParticleSystem(bulletExplosionSmokeEffect);
         }, 1500);
-
-        /*playAudio({
+*/
+  /*playAudio({
           audioId: AudioId.PistolHit,
           cacheId: AudioId.PistolHit,
           position: intersects[0].point,
@@ -96,7 +94,7 @@ export const updateBullets = ({ scene, colliders, destroyables }) => {
           scene,
           camera: getCamera(),
         });*/
-        bulletsToRemove.push(mesh);
+  /*bulletsToRemove.push(mesh);
       }
     }
   });
@@ -111,7 +109,7 @@ export const updateBullets = ({ scene, colliders, destroyables }) => {
     }
 
     return !old && !isCollided;
-  });
+  });*/
 };
 
 /*export const syncBulletPosition = ({ id, bulletId, position, scene }) => {
