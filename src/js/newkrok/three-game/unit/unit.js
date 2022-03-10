@@ -56,9 +56,9 @@ export const createCharacter = ({
   const sockets = {};
   const animations = [];
 
-  const model = getFBXModel(config.fbxModelId);
-  model.scale.copy(config.scale);
-  model.position.copy(position);
+  const model = getFBXModel(config.model.fbxId);
+  model.scale.copy(config.model.scale);
+  if (position) model.position.copy(position);
 
   const mixer = new THREE.AnimationMixer(model);
 
@@ -90,13 +90,13 @@ export const createCharacter = ({
 
   const usedModelPositions = [];
   model.traverse((child) => {
-    /* console.log(child.name); */
     neededSockets.forEach((socketData) => {
       if (socketData.modelChildIdList?.includes(child.name)) {
         socketData.selectedModelChildId = child.name;
         usedModelPositions[child.name] = child;
       }
     });
+    config.model?.traverseCallback?.(child);
   });
 
   neededSockets.forEach(({ socketId, position, selectedModelChildId }) => {
@@ -109,12 +109,12 @@ export const createCharacter = ({
   });
 
   if (onComplete) {
-    const character = {
+    const unit = {
       velocity: new THREE.Vector3(),
       playerDirection: new THREE.Vector3(),
       playerCollider: new Capsule(
-        new THREE.Vector3(position.x, config.radius, position.z),
-        new THREE.Vector3(position.x, config.height, position.z),
+        position || new THREE.Vector3(0, config.radius, 0),
+        position || new THREE.Vector3(0, config.height, 0),
         config.radius
       ),
       onGround: true,
@@ -122,59 +122,65 @@ export const createCharacter = ({
       isJumpTriggered: 0,
     };
 
-    /* character.playerCollider.position.copy(config.position);
-    character.playerCollider.rotation.copy(config.rotation); */
+    /* unit.playerCollider.position.copy(config.position);*/
 
     let inAirStartTime = 0;
     const playerCollisions = ({ now }) => {
-      const result = worldOctree.capsuleIntersect(character.playerCollider);
-      character.onGround = false;
+      const result = worldOctree.capsuleIntersect(unit.playerCollider);
+      unit.onGround = false;
 
       if (result) {
-        character.onGround = result.normal.y > 0;
-        if (!character.onGround) {
-          character.velocity.addScaledVector(
+        unit.onGround = result.normal.y > 0;
+        if (!unit.onGround) {
+          unit.velocity.addScaledVector(
             result.normal,
-            -result.normal.dot(character.velocity)
+            -result.normal.dot(unit.velocity)
           );
         }
 
-        character.playerCollider.translate(
+        unit.playerCollider.translate(
           result.normal.multiplyScalar(result.depth)
         );
       }
 
-      if (character.onGround) {
+      if (unit.onGround) {
         inAirStartTime = 0;
-        character.inAirTime = 0;
-        character.isJumpTriggered = false;
+        unit.inAirTime = 0;
+        unit.isJumpTriggered = false;
       } else if (inAirStartTime === 0) inAirStartTime = now;
-      else character.inAirTime = now - inAirStartTime;
+      else unit.inAirTime = now - inAirStartTime;
     };
 
     const onUpdate = ({ now, delta }) => {
-      if (character.isShootTriggered && !character.wasShootTriggered) {
-        character.shootStartTime = now;
-        character.wasShootTriggered = true;
+      if (unit.isShootTriggered && !unit.wasShootTriggered) {
+        unit.shootStartTime = now;
+        unit.wasShootTriggered = true;
       }
 
       const GRAVITY = 40;
       let damping = Math.exp(-8 * delta) - 1;
-      if (!character.onGround) {
-        character.velocity.y -= GRAVITY * delta;
+      if (!unit.onGround) {
+        unit.velocity.y -= GRAVITY * delta;
         damping *= 0.1;
       }
 
-      character.velocity.addScaledVector(character.velocity, damping);
-      const deltaPosition = character.velocity.clone().multiplyScalar(delta);
-      character.playerCollider.translate(deltaPosition);
+      unit.velocity.addScaledVector(unit.velocity, damping);
+      const deltaPosition = unit.velocity.clone().multiplyScalar(delta);
+      unit.playerCollider.translate(deltaPosition);
       playerCollisions({ now });
 
-      character.playerCollider.getCenter(model.position);
+      unit.playerCollider.getCenter(model.position);
       model.position.y -= config.height / 2 + config.radius / 2;
     };
 
-    Object.assign(character, {
+    const setRotation = (value) => {
+      unit.viewRotation = value;
+      model.rotation.y = Math.PI - unit.viewRotation + Math.PI;
+    };
+
+    if (rotation) setRotation(rotation.z);
+
+    Object.assign(unit, {
       id,
       model,
       config,
@@ -203,18 +209,15 @@ export const createCharacter = ({
         playerDirection.cross(model.up);
         return playerDirection;
       },
-      addVelocity: (value) => character.velocity.add(value),
+      addVelocity: (value) => unit.velocity.add(value),
       jump: () => {
-        character.velocity.y = config.jumpForce;
-        character.isJumpTriggered = true;
+        unit.velocity.y = config.jumpForce;
+        unit.isJumpTriggered = true;
       },
-      teleportTo: (position) => character.playerCollider.translate(position),
-      setRotation: (rotation) => {
-        character.viewRotation = rotation;
-        character.model.rotation.y = Math.PI - character.viewRotation + Math.PI;
-      },
-      getSocket: (socketId) => sockets[socketId],
+      teleportTo: (position) => unit.playerCollider.translate(position),
+      setRotation,
       update: onUpdate,
+      getSocket: (socketId) => sockets[socketId],
       updateLookAtPosition: ({ position, rotation }) => {
         if (position && rotation) {
           sockets[ModelSocketId.SPINE].parent.rotation.z =
@@ -228,6 +231,6 @@ export const createCharacter = ({
         }
       },
     });
-    onComplete(character);
+    onComplete(unit);
   }
 };

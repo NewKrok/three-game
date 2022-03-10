@@ -242,67 +242,8 @@ const applyConfigToWorld = ({
 
   worldConfig.staticModels.forEach(({ id, modelId, position, rotation }) => {
     const model = getGLTFModel(modelId);
-    model.scene.traverse((child) => {
-      if (child && child.isMesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-
-        //modules.forEach((module) => module?.onStaticModelMeshInited(child));
-
-        if (child.name.includes("Invisible")) {
-          child.visible = false;
-        }
-
-        /*if (child.name.includes("Smoke")) {
-          setTimeout(() => {
-            const smokeEffect = createParticleSystem(
-              effectsConfig[EffectId.SMOKE]
-            );
-            child.add(smokeEffect);
-          }, 100);
-        }*/
-
-        /*if (child.name.includes("Crate")) {
-          const destroyable = createDestroyable({
-            collider,
-            body: child,
-            destroy: () => {
-              const childPosition = child.getWorldPosition(new THREE.Vector3());
-              removeCollider(child);
-              destroyables = destroyables.filter(
-                (entry) => entry.collider !== collider
-              );
-              physicsWorld.removeBody(collider);
-              child.removeFromParent();
-
-              const crateExplosionEffect = createParticleSystem(
-                effectsConfig[EffectId.CRATE_EXPLOSION]
-              );
-              crateExplosionEffect.position.copy(childPosition);
-              scene.add(crateExplosionEffect);
-              const crateExplosionSmokeEffect = createParticleSystem(
-                effectsConfig[EffectId.CRATE_EXPLOSION_SMOKE]
-              );
-              crateExplosionSmokeEffect.position.copy(childPosition);
-              scene.add(crateExplosionSmokeEffect);
-              const crateExplosionFireEffect = createParticleSystem(
-                effectsConfig[EffectId.CRATE_EXPLOSION_FIRE]
-              );
-              crateExplosionFireEffect.position.copy(childPosition);
-              scene.add(crateExplosionFireEffect);
-              setTimeout(() => {
-                destroyParticleSystem(crateExplosionEffect);
-                destroyParticleSystem(crateExplosionSmokeEffect);
-                destroyParticleSystem(crateExplosionFireEffect);
-              }, 5000);
-            },
-          });
-          destroyables.push(destroyable);
-        }*/
-      }
-    });
-    model.scene.position.copy(position);
-    model.scene.rotation.set(rotation.x, rotation.y, rotation.z);
+    if (position) model.scene.position.copy(position);
+    if (rotation) model.scene.rotation.set(rotation.x, rotation.y, rotation.z);
     scene.add(model.scene);
     staticModels.push({ id, model });
   });
