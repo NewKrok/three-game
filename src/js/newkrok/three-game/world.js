@@ -10,7 +10,6 @@ import { createCharacter } from "./unit/unit";
 import { createParticleSystem } from "@newkrok/three-particles/src/js/effects/three-particles";
 import { detect } from "detect-browser";
 import { patchObject } from "@newkrok/three-particles/src/js/effects/three-particles/three-particles-utils";
-import { updateBullets } from "./bullet-manager";
 import { updateCharacterAnimation } from "./unit/unit-animation";
 
 export const getDefaultWorldConfig = () =>
@@ -77,7 +76,7 @@ export const createWorld = ({
   scene.background = new THREE.Color(scene.background);
 
   normalizedWorldConfig.modules.forEach(({ id, create, config }) => {
-    modules.push({ id, ...create({ scene, config }) });
+    modules.push({ id, ...create({ scene, config, modules }) });
   });
 
   const renderer = new THREE.WebGLRenderer({

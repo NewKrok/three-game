@@ -24,23 +24,19 @@ const createPositionHelper = (target, scale) => {
 const DefaultSockets = [
   {
     socketId: ModelSocketId.SPINE,
-    modelChildIdList: ["Bip001_Spine1"],
+    modelChildIdList: ["Spine_01"],
   },
   {
     socketId: ModelSocketId.LEFT_HAND,
-    modelChildIdList: ["Bip001_L_Hand"],
+    modelChildIdList: ["Hand_L"],
   },
   {
     socketId: ModelSocketId.RIGHT_HAND,
-    modelChildIdList: ["Bip001_R_Hand"],
+    modelChildIdList: ["Hand_R"],
   },
   {
     socketId: ModelSocketId.PROJECTILE_START,
-    modelChildIdList: ["Bip001_R_Hand"],
-  },
-  {
-    socketId: ModelSocketId.PROJECTILE_START,
-    modelChildIdList: ["Bip001_R_Hand"],
+    modelChildIdList: ["Hand_R"],
   },
 ];
 
@@ -55,6 +51,9 @@ export const createCharacter = ({
 }) => {
   const sockets = {};
   const animations = [];
+  const registeredModels = {};
+
+  let selectedToolId;
 
   const model = getFBXModel(config.model.fbxId);
   model.scale.copy(config.model.scale);
@@ -90,6 +89,7 @@ export const createCharacter = ({
 
   const usedModelPositions = [];
   model.traverse((child) => {
+    //console.log(child.name);
     neededSockets.forEach((socketData) => {
       if (socketData.modelChildIdList?.includes(child.name)) {
         socketData.selectedModelChildId = child.name;
@@ -178,6 +178,18 @@ export const createCharacter = ({
       model.rotation.y = Math.PI - unit.viewRotation + Math.PI;
     };
 
+    const registerModelIntoSocket = ({ id, model, socketId }) => {
+      const socket = sockets[socketId];
+      socket.add(model);
+      model.visible = false;
+      registeredModels[id] = model;
+    };
+
+    const hideAllRegisteredModels = () =>
+      Object.values(registeredModels).forEach(
+        (model) => (model.visible = false)
+      );
+
     if (rotation) setRotation(rotation.z);
 
     Object.assign(unit, {
@@ -218,16 +230,36 @@ export const createCharacter = ({
       setRotation,
       update: onUpdate,
       getSocket: (socketId) => sockets[socketId],
+      registerModelIntoSocket,
+      getRegisteredModel: (id) => registeredModels[id],
+      getAllRegisteredModels: () => Object.values(registeredModels),
+      hideAllRegisteredModels,
+      registerTools: (tools) => {
+        tools.forEach(({ id, model, socketId }) => {
+          registerModelIntoSocket({
+            id,
+            model,
+            socketId,
+          });
+        });
+      },
+      chooseTool: (id) => {
+        selectedToolId = id;
+        hideAllRegisteredModels();
+        if (registeredModels[selectedToolId])
+          registeredModels[selectedToolId].visible = true;
+      },
+      getSelectedTool: () => registeredModels[selectedToolId],
       updateLookAtPosition: ({ position, rotation }) => {
         if (position && rotation) {
-          sockets[ModelSocketId.SPINE].parent.rotation.z =
+          /*sockets[ModelSocketId.SPINE].parent.rotation.z =
             rotation.y - Math.PI / 2;
 
-          const rightHand = sockets[ModelSocketId.RIGHT_HAND].parent;
+           const rightHand = sockets[ModelSocketId.RIGHT_HAND].parent;
           rightHand.lookAt(position);
           rightHand.rotateZ(Math.PI / 2);
           rightHand.rotateY(-Math.PI / 2);
-          rightHand.rotateX(Math.PI);
+          rightHand.rotateX(Math.PI); */
         }
       },
     });
