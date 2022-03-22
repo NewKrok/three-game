@@ -115,11 +115,10 @@ export const createWorld = ({
     modules.forEach((module) => module.onUpdate?.(cycleData));
 
     characters.forEach((character) => {
-      character.update(cycleData);
       updateCharacterAnimation({ ...cycleData, character });
+      character.update(cycleData);
       characterTickRoutine && characterTickRoutine(character);
     });
-    //updateBullets({ scene, colliders, destroyables });
 
     _onUpdate && _onUpdate(cycleData);
 

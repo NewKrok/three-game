@@ -102,9 +102,14 @@ export const basicCharacter = {
   name: "Basic Character",
   fbxModelId: null,
   model: {
-    fbxId: null,
+    fbx: {
+      id: null,
+    },
     scale: { x: 1, y: 1, z: 1 },
     traverseCallback: null,
+    debug: {
+      showSockets: true,
+    },
   },
   height: 1.8,
   radius: 0.33,

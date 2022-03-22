@@ -8,16 +8,20 @@ import {
 import { Capsule } from "three/examples/jsm/math/capsule.js";
 import { MODULE_ID } from "../modules/modules.js";
 import { ModelSocketId } from "./unit-enums.js";
+import { Vector3 } from "three";
+import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
 let positionHelperGeometry;
 let positionHelperMaterial;
 const createPositionHelper = (target, scale) => {
+  const scaleMultiplier = 1 / scale;
   positionHelperGeometry =
     positionHelperGeometry ||
-    new THREE.SphereGeometry(0.02 * (1 / scale), 8, 8);
+    new THREE.SphereGeometry(0.02 * scaleMultiplier, 8, 8);
   positionHelperMaterial =
     positionHelperMaterial || new THREE.MeshBasicMaterial({ color: 0xff0000 });
   const sphere = new THREE.Mesh(positionHelperGeometry, positionHelperMaterial);
+  sphere.add(new THREE.AxesHelper(0.25 * scaleMultiplier));
   target.add(sphere);
 };
 
@@ -27,15 +31,31 @@ const DefaultSockets = [
     modelChildIdList: ["Spine_01"],
   },
   {
+    socketId: ModelSocketId.HEAD,
+    modelChildIdList: ["Head"],
+  },
+  {
+    socketId: ModelSocketId.LEFT_SHOULDER,
+    modelChildIdList: ["Shoulder_L"],
+  },
+  {
+    socketId: ModelSocketId.LEFT_ELBOW,
+    modelChildIdList: ["Elbow_L"],
+  },
+  {
     socketId: ModelSocketId.LEFT_HAND,
     modelChildIdList: ["Hand_L"],
   },
   {
-    socketId: ModelSocketId.RIGHT_HAND,
-    modelChildIdList: ["Hand_R"],
+    socketId: ModelSocketId.RIGHT_SHOULDER,
+    modelChildIdList: ["Shoulder_R"],
   },
   {
-    socketId: ModelSocketId.PROJECTILE_START,
+    socketId: ModelSocketId.RIGHT_ELBOW,
+    modelChildIdList: ["Elbow_R"],
+  },
+  {
+    socketId: ModelSocketId.RIGHT_HAND,
     modelChildIdList: ["Hand_R"],
   },
 ];
@@ -49,13 +69,25 @@ export const createCharacter = ({
   modules,
   config,
 }) => {
+  const _id = getUniqueId();
   const sockets = {};
   const animations = [];
-  const registeredModels = {};
+  const registeredObject = {};
+  const rightHandTarget = new Vector3();
+  const rightHandTargetWithLerp = new Vector3();
+  const spineTarget = new Vector3();
+  const spineTargetWithLerp = new Vector3();
 
   let selectedToolId;
 
-  const model = getFBXModel(config.model.fbxId);
+  // TODO: it's not enough generic
+  let originalLeftHandParent, originalLeftHandPosition;
+  const leftHandWorldPosition = new Vector3();
+
+  const fbx = getFBXModel(config.model.fbx.id);
+  const model = config.model.fbx.childIndex
+    ? fbx.children[config.model.fbx.childIndex]
+    : fbx;
   model.scale.copy(config.model.scale);
   if (position) model.position.copy(position);
 
@@ -89,9 +121,12 @@ export const createCharacter = ({
 
   const usedModelPositions = [];
   model.traverse((child) => {
-    //console.log(child.name);
+    console.log(child.name);
     neededSockets.forEach((socketData) => {
-      if (socketData.modelChildIdList?.includes(child.name)) {
+      if (
+        !usedModelPositions[child.name] &&
+        socketData.modelChildIdList?.includes(child.name)
+      ) {
         socketData.selectedModelChildId = child.name;
         usedModelPositions[child.name] = child;
       }
@@ -105,7 +140,8 @@ export const createCharacter = ({
     sockets[socketId] = socket;
     const parent = usedModelPositions[selectedModelChildId] || model;
     parent.add(socket);
-    //createPositionHelper(socket, config.scale.x);
+    if (config.model.debug.showSockets)
+      createPositionHelper(socket, config.model.scale.x);
   });
 
   if (onComplete) {
@@ -151,7 +187,7 @@ export const createCharacter = ({
       else unit.inAirTime = now - inAirStartTime;
     };
 
-    const onUpdate = ({ now, delta }) => {
+    const update = ({ now, delta }) => {
       if (unit.isShootTriggered && !unit.wasShootTriggered) {
         unit.shootStartTime = now;
         unit.wasShootTriggered = true;
@@ -171,6 +207,53 @@ export const createCharacter = ({
 
       unit.playerCollider.getCenter(model.position);
       model.position.y -= config.height / 2 + config.radius / 2;
+
+      if (unit.useAim) {
+        if (!originalLeftHandParent) {
+          originalLeftHandParent =
+            sockets[ModelSocketId.LEFT_HAND].parent.parent;
+          originalLeftHandPosition =
+            sockets[ModelSocketId.LEFT_HAND].parent.position.clone();
+        }
+        sockets[ModelSocketId.RIGHT_HAND].parent.add(
+          sockets[ModelSocketId.LEFT_HAND].parent
+        );
+        spineTargetWithLerp.lerp(spineTarget, 0.1);
+        sockets[ModelSocketId.SPINE].parent.lookAt(spineTargetWithLerp);
+        sockets[ModelSocketId.SPINE].parent.rotateY(Math.PI / 2 - 0.5);
+
+        rightHandTargetWithLerp.lerp(rightHandTarget, 0.2);
+        sockets[ModelSocketId.RIGHT_HAND].parent.lookAt(
+          rightHandTargetWithLerp
+        );
+        sockets[ModelSocketId.RIGHT_HAND].parent.rotateX(Math.PI / 2);
+        sockets[ModelSocketId.LEFT_HAND].parent.position.copy(
+          new THREE.Vector3(15, 40, 0)
+        );
+        sockets[ModelSocketId.LEFT_HAND].parent.rotation.set(
+          Math.PI / 2,
+          -Math.PI / 4,
+          Math.PI / 2
+        );
+        sockets[ModelSocketId.LEFT_HAND].parent.updateWorldMatrix(true, false);
+        leftHandWorldPosition.set(0, 0, 0);
+        sockets[ModelSocketId.LEFT_HAND].parent.localToWorld(
+          leftHandWorldPosition
+        );
+        sockets[ModelSocketId.LEFT_ELBOW].parent.lookAt(leftHandWorldPosition);
+        sockets[ModelSocketId.LEFT_ELBOW].parent.updateWorldMatrix(true, false);
+        sockets[ModelSocketId.LEFT_ELBOW].parent.rotateZ(-Math.PI / 2);
+        sockets[ModelSocketId.LEFT_ELBOW].parent.rotateX(Math.PI / 2);
+      } else {
+        if (originalLeftHandParent) {
+          originalLeftHandParent.add(sockets[ModelSocketId.LEFT_HAND].parent);
+          sockets[ModelSocketId.LEFT_HAND].parent.position.copy(
+            originalLeftHandPosition
+          );
+          originalLeftHandPosition = null;
+          originalLeftHandParent = null;
+        }
+      }
     };
 
     const setRotation = (value) => {
@@ -178,16 +261,17 @@ export const createCharacter = ({
       model.rotation.y = Math.PI - unit.viewRotation + Math.PI;
     };
 
-    const registerModelIntoSocket = ({ id, model, socketId }) => {
+    const registerObjectIntoSocket = (props) => {
+      const { id, socketId, object } = props;
       const socket = sockets[socketId];
-      socket.add(model);
-      model.visible = false;
-      registeredModels[id] = model;
+      socket.add(object);
+      object.visible = false;
+      registeredObject[id] = { object, ...props };
     };
 
-    const hideAllRegisteredModels = () =>
-      Object.values(registeredModels).forEach(
-        (model) => (model.visible = false)
+    const hideAllRegisteredObject = () =>
+      Object.values(registeredObject).forEach(
+        ({ object }) => (object.visible = false)
       );
 
     if (rotation) setRotation(rotation.z);
@@ -228,40 +312,31 @@ export const createCharacter = ({
       },
       teleportTo: (position) => unit.playerCollider.translate(position),
       setRotation,
-      update: onUpdate,
+      update,
       getSocket: (socketId) => sockets[socketId],
-      registerModelIntoSocket,
-      getRegisteredModel: (id) => registeredModels[id],
-      getAllRegisteredModels: () => Object.values(registeredModels),
-      hideAllRegisteredModels,
+      registerObjectIntoSocket,
+      getRegisteredObject: (id) => registeredObject[id],
+      getAllRegisteredObjects: () => Object.values(registeredObject),
+      hideAllRegisteredObject,
       registerTools: (tools) => {
-        tools.forEach(({ id, model, socketId }) => {
-          registerModelIntoSocket({
-            id,
-            model,
-            socketId,
-          });
+        tools.forEach((props) => {
+          registerObjectIntoSocket(props);
         });
       },
       chooseTool: (id) => {
         selectedToolId = id;
-        hideAllRegisteredModels();
-        if (registeredModels[selectedToolId])
-          registeredModels[selectedToolId].visible = true;
+        hideAllRegisteredObject();
+        if (registeredObject[selectedToolId])
+          registeredObject[selectedToolId].object.visible = true;
       },
-      getSelectedTool: () => registeredModels[selectedToolId],
-      updateLookAtPosition: ({ position, rotation }) => {
-        if (position && rotation) {
-          /*sockets[ModelSocketId.SPINE].parent.rotation.z =
-            rotation.y - Math.PI / 2;
-
-           const rightHand = sockets[ModelSocketId.RIGHT_HAND].parent;
-          rightHand.lookAt(position);
-          rightHand.rotateZ(Math.PI / 2);
-          rightHand.rotateY(-Math.PI / 2);
-          rightHand.rotateX(Math.PI); */
+      getSelectedTool: () => registeredObject[selectedToolId],
+      updateAimPosition: (position) => {
+        if (position) {
+          spineTarget.copy(position);
+          rightHandTarget.copy(position);
         }
       },
+      userData: {},
     });
     onComplete(unit);
   }
