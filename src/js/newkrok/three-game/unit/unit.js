@@ -6,9 +6,9 @@ import {
 } from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
 
 import { Capsule } from "three/examples/jsm/math/capsule.js";
-import { MODULE_ID } from "../modules/modules.js";
 import { ModelSocketId } from "./unit-enums.js";
-import { Vector3 } from "three";
+import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
+import { createModuleHandler } from "../modules/module-handler.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
 let positionHelperGeometry;
@@ -60,29 +60,24 @@ const DefaultSockets = [
   },
 ];
 
-export const createCharacter = ({
-  gravity,
+export const createUnit = ({
+  world,
   id,
   position,
   rotation,
   onComplete,
-  modules,
+  getWorldModule,
   config,
 }) => {
-  const _id = getUniqueId();
+  const instanceId = getUniqueId();
+  const moduleHandler = createModuleHandler(config.modules);
+  let worldOctree = null;
+
   const sockets = {};
   const animations = [];
   const registeredObject = {};
-  const rightHandTarget = new Vector3();
-  const rightHandTargetWithLerp = new Vector3();
-  const spineTarget = new Vector3();
-  const spineTargetWithLerp = new Vector3();
 
   let selectedToolId;
-
-  // TODO: it's not enough generic
-  let originalLeftHandParent, originalLeftHandPosition;
-  const leftHandWorldPosition = new Vector3();
 
   const fbx = getFBXModel(config.model.fbx.id);
   const model = config.model.fbx.childIndex
@@ -92,8 +87,6 @@ export const createCharacter = ({
   if (position) model.position.copy(position);
 
   const mixer = new THREE.AnimationMixer(model);
-
-  const { worldOctree } = modules.find(({ id }) => id === MODULE_ID.OCTREE);
 
   const addAnimation = (key) => {
     const anim = getFBXSkeletonAnimation(config.animations[key]);
@@ -146,6 +139,8 @@ export const createCharacter = ({
 
   if (onComplete) {
     const unit = {
+      id,
+      instanceId,
       velocity: new THREE.Vector3(),
       playerDirection: new THREE.Vector3(),
       playerCollider: new Capsule(
@@ -162,6 +157,8 @@ export const createCharacter = ({
 
     let inAirStartTime = 0;
     const playerCollisions = ({ now }) => {
+      if (!worldOctree)
+        worldOctree = getWorldModule(WorldModuleId.OCTREE).worldOctree;
       const result = worldOctree.capsuleIntersect(unit.playerCollider);
       unit.onGround = false;
 
@@ -187,7 +184,8 @@ export const createCharacter = ({
       else unit.inAirTime = now - inAirStartTime;
     };
 
-    const update = ({ now, delta }) => {
+    const update = (cycleData) => {
+      const { now, delta } = cycleData;
       if (unit.isShootTriggered && !unit.wasShootTriggered) {
         unit.shootStartTime = now;
         unit.wasShootTriggered = true;
@@ -208,52 +206,7 @@ export const createCharacter = ({
       unit.playerCollider.getCenter(model.position);
       model.position.y -= config.height / 2 + config.radius / 2;
 
-      if (unit.useAim) {
-        if (!originalLeftHandParent) {
-          originalLeftHandParent =
-            sockets[ModelSocketId.LEFT_HAND].parent.parent;
-          originalLeftHandPosition =
-            sockets[ModelSocketId.LEFT_HAND].parent.position.clone();
-        }
-        sockets[ModelSocketId.RIGHT_HAND].parent.add(
-          sockets[ModelSocketId.LEFT_HAND].parent
-        );
-        spineTargetWithLerp.lerp(spineTarget, 0.1);
-        sockets[ModelSocketId.SPINE].parent.lookAt(spineTargetWithLerp);
-        sockets[ModelSocketId.SPINE].parent.rotateY(Math.PI / 2 - 0.5);
-
-        rightHandTargetWithLerp.lerp(rightHandTarget, 0.2);
-        sockets[ModelSocketId.RIGHT_HAND].parent.lookAt(
-          rightHandTargetWithLerp
-        );
-        sockets[ModelSocketId.RIGHT_HAND].parent.rotateX(Math.PI / 2);
-        sockets[ModelSocketId.LEFT_HAND].parent.position.copy(
-          new THREE.Vector3(15, 40, 0)
-        );
-        sockets[ModelSocketId.LEFT_HAND].parent.rotation.set(
-          Math.PI / 2,
-          -Math.PI / 4,
-          Math.PI / 2
-        );
-        sockets[ModelSocketId.LEFT_HAND].parent.updateWorldMatrix(true, false);
-        leftHandWorldPosition.set(0, 0, 0);
-        sockets[ModelSocketId.LEFT_HAND].parent.localToWorld(
-          leftHandWorldPosition
-        );
-        sockets[ModelSocketId.LEFT_ELBOW].parent.lookAt(leftHandWorldPosition);
-        sockets[ModelSocketId.LEFT_ELBOW].parent.updateWorldMatrix(true, false);
-        sockets[ModelSocketId.LEFT_ELBOW].parent.rotateZ(-Math.PI / 2);
-        sockets[ModelSocketId.LEFT_ELBOW].parent.rotateX(Math.PI / 2);
-      } else {
-        if (originalLeftHandParent) {
-          originalLeftHandParent.add(sockets[ModelSocketId.LEFT_HAND].parent);
-          sockets[ModelSocketId.LEFT_HAND].parent.position.copy(
-            originalLeftHandPosition
-          );
-          originalLeftHandPosition = null;
-          originalLeftHandParent = null;
-        }
-      }
+      moduleHandler.update(cycleData);
     };
 
     const setRotation = (value) => {
@@ -277,7 +230,7 @@ export const createCharacter = ({
     if (rotation) setRotation(rotation.z);
 
     Object.assign(unit, {
-      id,
+      getModule: moduleHandler.getModule,
       model,
       config,
       mixer,
@@ -330,14 +283,10 @@ export const createCharacter = ({
           registeredObject[selectedToolId].object.visible = true;
       },
       getSelectedTool: () => registeredObject[selectedToolId],
-      updateAimPosition: (position) => {
-        if (position) {
-          spineTarget.copy(position);
-          rightHandTarget.copy(position);
-        }
-      },
+      updateAimPosition: (position) => aimPosition.copy(position),
       userData: {},
     });
+    moduleHandler.init({ world, unit });
     onComplete(unit);
   }
 };

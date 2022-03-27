@@ -1,6 +1,6 @@
 import * as THREE from "three";
 
-import { MODULE_ID } from "@newkrok/three-game/src/js/newkrok/three-game/modules/modules.js";
+import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
 const create = ({ scene, modules }) => {
   const projectileGeometry = new THREE.SphereGeometry(0.02, 8, 8);
@@ -13,12 +13,12 @@ const create = ({ scene, modules }) => {
   const getWorldOctree = () => {
     if (!worldOctreeCache)
       worldOctreeCache = modules.find(
-        ({ id }) => id === MODULE_ID.OCTREE
+        ({ id }) => id === WorldModuleId.OCTREE
       ).worldOctree;
     return worldOctreeCache;
   };
 
-  const onUpdate = () => {
+  const update = () => {
     const projectilesToRemove = [];
 
     projectiles.forEach(({ mesh, collider, direction, config }) => {
@@ -80,11 +80,11 @@ const create = ({ scene, modules }) => {
     });
   };
 
-  return { onUpdate, shoot };
+  return { update, shoot };
 };
 
 export const projectilesModule = {
-  id: MODULE_ID.PROJECTILES,
+  id: WorldModuleId.PROJECTILES,
   create,
   config: {},
 };

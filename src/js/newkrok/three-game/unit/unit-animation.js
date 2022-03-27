@@ -1,38 +1,37 @@
 import * as THREE from "three";
 
-export const updateCharacterAnimation = ({ delta, character }) => {
-  if (character.mixer) {
-    const flatVelocity = character.velocity.clone();
-    flatVelocity.y = 0;
+export const updateUnitAnimation = ({ delta, unit }) => {
+  if (unit.mixer) {
     const currentUnitState = {
-      ...character,
-      horizontalVelocity: flatVelocity.length(),
+      ...unit,
+      cache: unit.config.animationConfig.createCache(unit),
     };
-    const animation = character.config.animationConfig.find(({ condition }) =>
+
+    const animation = unit.config.animationConfig.rules.find(({ condition }) =>
       condition(currentUnitState)
     );
-    setAnimationAction({ ...animation, character });
-    character.mixer.update(delta);
+    setAnimation({ ...animation, unit });
+    unit.mixer.update(delta);
   }
 };
 
-const setAnimationAction = ({
-  character,
+const setAnimation = ({
+  unit,
   animation,
   transitionTime = 0.2,
   loop = true,
 }) => {
-  if (animation !== character.activeAnimation) {
-    character.activeAnimation = animation;
-    character.lastAction = character.activeAction;
-    character.activeAction = character.animations[animation];
-    if (character.lastAction) character.lastAction.fadeOut(transitionTime);
-    character.activeAction.reset();
-    character.activeAction.fadeIn(transitionTime);
+  if (animation !== unit.activeAnimation) {
+    unit.activeAnimation = animation;
+    unit.lastAction = unit.activeAction;
+    unit.activeAction = unit.animations[animation];
+    if (unit.lastAction) unit.lastAction.fadeOut(transitionTime);
+    unit.activeAction.reset();
+    unit.activeAction.fadeIn(transitionTime);
     if (!loop) {
-      character.activeAction.setLoop(THREE.LoopOnce);
-      character.activeAction.clampWhenFinished = true;
+      unit.activeAction.setLoop(THREE.LoopOnce);
+      unit.activeAction.clampWhenFinished = true;
     }
-    character.activeAction.play();
+    unit.activeAction.play();
   }
 };

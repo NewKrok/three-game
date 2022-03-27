@@ -6,11 +6,11 @@ import {
   loadAssets,
 } from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
 
-import { createCharacter } from "./unit/unit";
-import { createParticleSystem } from "@newkrok/three-particles/src/js/effects/three-particles";
+import { createModuleHandler } from "./modules/module-handler.js";
+import { createUnit } from "./unit/unit";
 import { detect } from "detect-browser";
 import { patchObject } from "@newkrok/three-particles/src/js/effects/three-particles/three-particles-utils";
-import { updateCharacterAnimation } from "./unit/unit-animation";
+import { updateUnitAnimation } from "./unit/unit-animation";
 
 export const getDefaultWorldConfig = () =>
   JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG));
@@ -40,7 +40,7 @@ const DEFAULT_WORLD_CONFIG = {
   },
   entities: [],
   modules: [],
-  characters: [],
+  units: [],
   staticModels: [],
   onLoaded: null,
 };
@@ -50,16 +50,15 @@ export const createWorld = ({
   camera,
   assetsConfig,
   worldConfig,
-  characterConfig,
-  characterTickRoutine,
+  unitConfig,
+  unitTickRoutine,
 }) => {
   const normalizedWorldConfig = patchObject(DEFAULT_WORLD_CONFIG, worldConfig);
 
   let _onUpdate;
 
-  const modules = [];
   const staticModels = [];
-  const characters = [];
+  const units = [];
   const destroyables = [];
 
   const cycleData = {
@@ -75,9 +74,7 @@ export const createWorld = ({
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(scene.background);
 
-  normalizedWorldConfig.modules.forEach(({ id, create, config }) => {
-    modules.push({ id, ...create({ scene, config, modules }) });
-  });
+  const moduleHandler = createModuleHandler(normalizedWorldConfig.modules);
 
   const renderer = new THREE.WebGLRenderer({
     antialias: normalizedWorldConfig.renderer.antialias,
@@ -112,12 +109,12 @@ export const createWorld = ({
     cycleData.delta = rawDelta > 0.1 ? 0.1 : rawDelta;
     cycleData.elapsed = clock.getElapsedTime();
 
-    modules.forEach((module) => module.onUpdate?.(cycleData));
+    moduleHandler.update(cycleData);
 
-    characters.forEach((character) => {
-      updateCharacterAnimation({ ...cycleData, character });
-      character.update(cycleData);
-      characterTickRoutine && characterTickRoutine(character);
+    units.forEach((unit) => {
+      updateUnitAnimation({ ...cycleData, unit });
+      unit.update(cycleData);
+      unitTickRoutine && unitTickRoutine(unit);
     });
 
     _onUpdate && _onUpdate(cycleData);
@@ -168,35 +165,31 @@ export const createWorld = ({
       loadAssets(normalizedAssetsConfig).then(() => {
         const world = {
           renderer,
+          camera,
           scene,
-          modules,
+          getModule: moduleHandler.getModule,
           dispose: () => {
             window.removeEventListener("resize", onWindowResize);
             window.removeEventListener("visibilitychange", onVisibilityChange);
           },
           onUpdate: (onUpdate) => (_onUpdate = onUpdate),
-          getCharacter: (selector) => characters.find(selector),
+          getUnit: (selector) => units.find(selector),
           getStaticModel: (idOrSelector) =>
             (typeof idOrSelector === "function"
               ? staticModels.find(idOrSelector)
               : staticModels.find((model) => model.id === idOrSelector)
             ).model,
-          getModule: (idOrSelector) =>
-            typeof idOrSelector === "function"
-              ? modules.find(idOrSelector)
-              : modules.find((module) => module.id === idOrSelector),
         };
+
+        moduleHandler.init(world);
 
         applyConfigToWorld({
           world,
           staticModels,
-          characters,
-          /* removeCollider: (collider) => {
-            colliders = colliders.filter((entry) => entry !== collider);
-          }, */
+          units,
           destroyables,
           worldConfig,
-          characterConfig,
+          unitConfig,
         });
 
         normalizedWorldConfig.onLoaded && normalizedWorldConfig.onLoaded(world);
@@ -215,11 +208,11 @@ export const createWorld = ({
 const applyConfigToWorld = ({
   world,
   staticModels,
-  characters,
+  units,
   worldConfig,
-  characterConfig,
+  unitConfig,
 }) => {
-  const { scene, modules } = world;
+  const { scene } = world;
   if (worldConfig.skybox.textures.length > 0) {
     const materialArray = worldConfig.skybox.textures.map(
       (textureId) =>
@@ -246,17 +239,17 @@ const applyConfigToWorld = ({
     staticModels.push({ id, model });
   });
 
-  worldConfig.characters.forEach(({ id, characterId, position, rotation }) => {
-    createCharacter({
-      gravity: worldConfig.gravity,
+  worldConfig.units.forEach(({ id, unitId, position, rotation }) => {
+    createUnit({
+      world,
       id,
       position: typeof position === "function" ? position(world) : position,
       rotation: typeof rotation === "function" ? rotation(world) : rotation,
-      config: characterConfig[characterId],
-      modules,
-      onComplete: (character) => {
-        scene.add(character.model);
-        characters.push(character);
+      config: unitConfig[unitId],
+      getWorldModule: world.getModule,
+      onComplete: (unit) => {
+        scene.add(unit.model);
+        units.push(unit);
       },
     });
   });
