@@ -77,6 +77,7 @@ export const createUnit = ({
   const animations = [];
   const registeredObject = {};
 
+  let inAirStartTime = 0;
   let selectedToolId;
 
   const fbx = getFBXModel(config.model.fbx.id);
@@ -155,8 +156,7 @@ export const createUnit = ({
 
     /* unit.playerCollider.position.copy(config.position);*/
 
-    let inAirStartTime = 0;
-    const playerCollisions = ({ now }) => {
+    const playerCollisions = () => {
       if (!worldOctree)
         worldOctree = getWorldModule(WorldModuleId.OCTREE).worldOctree;
       const result = worldOctree.capsuleIntersect(unit.playerCollider);
@@ -175,7 +175,9 @@ export const createUnit = ({
           result.normal.multiplyScalar(result.depth)
         );
       }
+    };
 
+    const checkGroundState = (now) => {
       if (unit.onGround) {
         inAirStartTime = 0;
         unit.inAirTime = 0;
@@ -198,10 +200,18 @@ export const createUnit = ({
         damping *= 0.1;
       }
 
-      unit.velocity.addScaledVector(unit.velocity, damping);
+      /**
+       * Solve total collision in multiple steps to avoid wall collision issues
+       */
+      const stepCount = 3;
+      unit.velocity.addScaledVector(unit.velocity.clone(), damping);
       const deltaPosition = unit.velocity.clone().multiplyScalar(delta);
-      unit.playerCollider.translate(deltaPosition);
-      playerCollisions({ now });
+      const velocityStep = deltaPosition.clone().divideScalar(stepCount);
+      for (let i = 0; i < stepCount; i++) {
+        unit.playerCollider.translate(velocityStep);
+        playerCollisions();
+      }
+      checkGroundState(now);
 
       unit.playerCollider.getCenter(model.position);
       model.position.y -= config.height / 2 + config.radius / 2;
@@ -231,6 +241,7 @@ export const createUnit = ({
 
     Object.assign(unit, {
       getModule: moduleHandler.getModule,
+      addModule: moduleHandler.addModule,
       model,
       config,
       mixer,

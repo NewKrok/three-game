@@ -5,4 +5,6 @@ export const WorldModuleId = {
 
 export const UnitModuleId = {
   AIMING: "AIMING",
+  UNIT_CONTROLLER: "UNIT_CONTROLLER",
+  ABILITIES: "ABILITIES",
 };

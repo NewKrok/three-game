@@ -168,6 +168,7 @@ export const createWorld = ({
           camera,
           scene,
           getModule: moduleHandler.getModule,
+          addModule: moduleHandler.addModule,
           dispose: () => {
             window.removeEventListener("resize", onWindowResize);
             window.removeEventListener("visibilitychange", onVisibilityChange);
