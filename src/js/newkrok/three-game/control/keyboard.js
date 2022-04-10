@@ -9,16 +9,16 @@ export const Key = {
     const key = String.fromCharCode(65 + index);
     return { ...prev, [key]: key.toLowerCase() };
   }, {}),
-  ArrowUp: "ArrowUp",
-  ArrowDown: "ArrowDown",
-  ArrowLeft: "ArrowLeft",
-  ArrowRight: "ArrowRight",
-  Shift: "Shift",
-  Control: "Control",
-  Alt: "Alt",
-  Tab: "Tab",
-  Space: " ",
-  Escape: "Escape",
+  ARROW_UP: "ArrowUp",
+  ARROW_DOWN: "ArrowDown",
+  ARROW_LEFT: "ArrowLeft",
+  ARROW_RIGHT: "ArrowRight",
+  SHIFT: "Shift",
+  CONTROL: "Control",
+  ALT: "Alt",
+  TAB: "Tab",
+  SPACE: " ",
+  ESCAPE: "Escape",
 };
 const keyStates = {};
 

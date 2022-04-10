@@ -9,7 +9,7 @@ import {
 import { createModuleHandler } from "./modules/module-handler.js";
 import { createUnit } from "./unit/unit";
 import { detect } from "detect-browser";
-import { patchObject } from "@newkrok/three-particles/src/js/effects/three-particles/three-particles-utils";
+import { patchObject } from "@newkrok/three-utils/src/js/newkrok/three-utils/object-utils.js";
 import { updateUnitAnimation } from "./unit/unit-animation";
 
 export const getDefaultWorldConfig = () =>

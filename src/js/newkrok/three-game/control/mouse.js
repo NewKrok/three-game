@@ -1,31 +1,21 @@
 export const Mouse = {
-    LEFT_BUTTON: "LEFT_BUTTON",
-    MIDDLE_BUTTON: "MIDDLE_BUTTON",
-    RIGHT_BUTTON: "RIGHT_BUTTON",
-    SCROLL: "SCROLL",
-    SCROLL_UP: "SCROLL_UP",
-    SCROLL_DOWN: "SCROLL_DOWN",
-    MOVE: "MOVE"
-  };
+  LEFT_BUTTON: "LEFT_BUTTON",
+  MIDDLE_BUTTON: "MIDDLE_BUTTON",
+  RIGHT_BUTTON: "RIGHT_BUTTON",
+  SCROLL: "SCROLL",
+  SCROLL_UP: "SCROLL_UP",
+  SCROLL_DOWN: "SCROLL_DOWN",
+};
 
 const mouseStates = {};
 
 export const getMouseState = (key) => mouseStates[key];
 
 export const initMouseManager = () => {
-  /* document.addEventListener("wheel", ({ deltaY }) => {
-    trigger({
-      action:
-        deltaY > 0 ? UnitAction.CHOOSE_NEXT_TOOL : UnitAction.CHOOSE_PREV_TOOL,
-      value: deltaY,
-    });
+  document.addEventListener("wheel", ({ deltaY }) => {
+    mouseStates[Mouse.SCROLL_DOWN] = deltaY > 0;
+    mouseStates[Mouse.SCROLL_UP] = deltaY < 0;
   });
-  document.addEventListener("mousemove", ({ movementX, movementY }) => {
-    trigger({
-      action: UnitAction.RotateCamera,
-      value: { x: movementX / 350, y: movementY / 350 },
-    });
-  }); */
   document.addEventListener("mousedown", (e) => {
     switch (e.button) {
       case 0:
@@ -60,4 +50,9 @@ export const initMouseManager = () => {
       default:
     }
   });
+};
+
+export const resetMouseStates = () => {
+  mouseStates[Mouse.SCROLL_DOWN] = false;
+  mouseStates[Mouse.SCROLL_UP] = false;
 };

@@ -101,9 +101,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        isStrafing,
-        strafingDirection,
+        userData: { useAim, isStrafing, strafingDirection },
         cache: { useRifle },
       }) => isStrafing && useAim && strafingDirection === 1 && useRifle,
       animation: HumanoidUnitAnimationId.RIFLE_STRAFE_LEFT,
@@ -112,9 +110,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        isStrafing,
-        strafingDirection,
+        userData: { useAim, isStrafing, strafingDirection },
         cache: { usePistol },
       }) => isStrafing && useAim && strafingDirection === 1 && usePistol,
       animation: HumanoidUnitAnimationId.PISTOL_STRAFE_LEFT,
@@ -123,16 +119,14 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        isStrafing,
-        strafingDirection,
-        cache: { horizontalVelocity },
+        cache: { horizontalVelocity, isStrafing, strafingDirection },
       }) => isStrafing && strafingDirection === 1 && horizontalVelocity > 4,
       animation: HumanoidUnitAnimationId.RUN_STRAFE_LEFT,
       transitionTime: 0.2,
       loop: true,
     },
     {
-      condition: ({ isStrafing, strafingDirection }) =>
+      condition: ({ userData: { isStrafing, strafingDirection } }) =>
         isStrafing && strafingDirection === 1,
       animation: HumanoidUnitAnimationId.WALK_STRAFE_LEFT,
       transitionTime: 0.2,
@@ -140,9 +134,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        isStrafing,
-        strafingDirection,
+        userData: { useAim, isStrafing, strafingDirection },
         cache: { usePistol, useRifle },
       }) =>
         isStrafing &&
@@ -155,9 +147,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        isStrafing,
-        strafingDirection,
+        userData: { useAim, isStrafing, strafingDirection },
         cache: { usePistol },
       }) => isStrafing && useAim && strafingDirection !== 1 && usePistol,
       animation: HumanoidUnitAnimationId.PISTOL_STRAFE_RIGHT,
@@ -166,16 +156,14 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        isStrafing,
-        strafingDirection,
-        cache: { horizontalVelocity },
+        cache: { horizontalVelocity, isStrafing, strafingDirection },
       }) => isStrafing && strafingDirection !== 1 && horizontalVelocity > 4,
       animation: HumanoidUnitAnimationId.RUN_STRAFE_RIGHT,
       transitionTime: 0.2,
       loop: true,
     },
     {
-      condition: ({ isStrafing, strafingDirection }) =>
+      condition: ({ userData: { isStrafing, strafingDirection } }) =>
         isStrafing && strafingDirection !== 1,
       animation: HumanoidUnitAnimationId.WALK_STRAFE_RIGHT,
       transitionTime: 0.2,
@@ -183,8 +171,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        moveBack,
+        userData: { useAim, moveBack },
         cache: { horizontalVelocity, useRifle },
       }) => useAim && horizontalVelocity > 4 && moveBack && useRifle,
       animation: HumanoidUnitAnimationId.RIFLE_RUN_BACKWARDS,
@@ -193,8 +180,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        moveBack,
+        userData: { useAim, moveBack },
         cache: { horizontalVelocity, usePistol },
       }) => useAim && horizontalVelocity > 4 && moveBack && usePistol,
       animation: HumanoidUnitAnimationId.PISTOL_RUN_BACKWARDS,
@@ -203,8 +189,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        moveBack,
+        userData: { useAim, moveBack },
         cache: { horizontalVelocity },
       }) => useAim && horizontalVelocity > 4 && moveBack,
       animation: HumanoidUnitAnimationId.RUN_BACKWARDS,
@@ -213,8 +198,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        moveBack,
+        userData: { useAim, moveBack },
         cache: { horizontalVelocity, useRifle },
       }) => useAim && horizontalVelocity > 1 && moveBack && useRifle,
       animation: HumanoidUnitAnimationId.RIFLE_WALK_BACKWARDS,
@@ -223,8 +207,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        moveBack,
+        userData: { useAim, moveBack },
         cache: { horizontalVelocity, usePistol },
       }) => useAim && horizontalVelocity > 1 && moveBack && usePistol,
       animation: HumanoidUnitAnimationId.PISTOL_WALK_BACKWARDS,
@@ -233,8 +216,7 @@ export const humanoidAnimationConfig = {
     },
     {
       condition: ({
-        userData: { useAim },
-        moveBack,
+        userData: { useAim, moveBack },
         cache: { horizontalVelocity },
       }) => useAim && horizontalVelocity > 1 && moveBack,
       animation: HumanoidUnitAnimationId.WALK_BACKWARDS,

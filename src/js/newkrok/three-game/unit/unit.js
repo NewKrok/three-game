@@ -242,6 +242,7 @@ export const createUnit = ({
     Object.assign(unit, {
       getModule: moduleHandler.getModule,
       addModule: moduleHandler.addModule,
+      addModules: (modules) => modules.forEach(moduleHandler.addModule),
       model,
       config,
       mixer,
@@ -249,10 +250,11 @@ export const createUnit = ({
       hasAnimation: true,
       activeAnimation: "",
       animations,
+      getSpeed: () =>
+        config.speedModifier?.(unit, config.speed) ?? config.speed,
       turn: 0,
       isHanging: false,
       shimmyVelocity: 0,
-      isStrafing: false,
       strafingDirection: 0,
       viewRotation: 0,
       targetRotation: 0,
