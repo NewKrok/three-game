@@ -115,7 +115,7 @@ export const createUnit = ({
 
   const usedModelPositions = [];
   model.traverse((child) => {
-    console.log(child.name);
+    //console.log(child.name);
     neededSockets.forEach((socketData) => {
       if (
         !usedModelPositions[child.name] &&
@@ -187,34 +187,37 @@ export const createUnit = ({
     };
 
     const update = (cycleData) => {
-      const { now, delta } = cycleData;
-      if (unit.isShootTriggered && !unit.wasShootTriggered) {
-        unit.shootStartTime = now;
-        unit.wasShootTriggered = true;
-      }
+      const { now, delta, isPaused } = cycleData;
 
-      const GRAVITY = 40;
-      let damping = Math.exp(-8 * delta) - 1;
-      if (!unit.onGround) {
-        unit.velocity.y -= GRAVITY * delta;
-        damping *= 0.1;
-      }
+      if (!isPaused) {
+        if (unit.isShootTriggered && !unit.wasShootTriggered) {
+          unit.shootStartTime = now;
+          unit.wasShootTriggered = true;
+        }
 
-      /**
-       * Solve total collision in multiple steps to avoid wall collision issues
-       */
-      const stepCount = 3;
-      unit.velocity.addScaledVector(unit.velocity.clone(), damping);
-      const deltaPosition = unit.velocity.clone().multiplyScalar(delta);
-      const velocityStep = deltaPosition.clone().divideScalar(stepCount);
-      for (let i = 0; i < stepCount; i++) {
-        unit.playerCollider.translate(velocityStep);
-        playerCollisions();
-      }
-      checkGroundState(now);
+        const GRAVITY = 40;
+        let damping = Math.exp(-8 * delta) - 1;
+        if (!unit.onGround) {
+          unit.velocity.y -= GRAVITY * delta;
+          damping *= 0.1;
+        }
 
-      unit.playerCollider.getCenter(model.position);
-      model.position.y -= config.height / 2 + config.radius / 2;
+        /**
+         * Solve total collision in multiple steps to avoid wall collision issues
+         */
+        const stepCount = 3;
+        unit.velocity.addScaledVector(unit.velocity.clone(), damping);
+        const deltaPosition = unit.velocity.clone().multiplyScalar(delta);
+        const velocityStep = deltaPosition.clone().divideScalar(stepCount);
+        for (let i = 0; i < stepCount; i++) {
+          unit.playerCollider.translate(velocityStep);
+          playerCollisions();
+        }
+        checkGroundState(now);
+
+        unit.playerCollider.getCenter(model.position);
+        model.position.y -= config.height / 2 + config.radius / 2;
+      }
 
       moduleHandler.update(cycleData);
     };

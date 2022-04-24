@@ -60,13 +60,18 @@ export const createWorld = ({
   const staticModels = [];
   const units = [];
   const destroyables = [];
+  const pauseCallbacks = [];
+  const resumeCallbacks = [];
 
   const cycleData = {
+    isPaused: false,
     now: 0,
     delta: 0,
     elapsed: 0,
-    pauseStartTime: 0,
-    totalPauseTime: 0,
+    inactivePauseStartTime: 0,
+    inactiveTotalPauseTime: 0,
+    manualPauseStartTime: 0,
+    manualTotalPauseTime: 0,
   };
   const clock = new THREE.Clock();
   const browserInfo = detect();
@@ -104,22 +109,22 @@ export const createWorld = ({
   entities.forEach((entity) => scene.add(entity));
 
   const update = () => {
-    const rawDelta = clock.getDelta();
-    cycleData.now = Date.now() - cycleData.totalPauseTime;
-    cycleData.delta = rawDelta > 0.1 ? 0.1 : rawDelta;
-    cycleData.elapsed = clock.getElapsedTime();
-
+    if (!cycleData.isPaused) {
+      const rawDelta = clock.getDelta();
+      cycleData.now = Date.now() - cycleData.inactiveTotalPauseTime;
+      cycleData.delta = rawDelta > 0.1 ? 0.1 : rawDelta;
+      cycleData.elapsed = clock.getElapsedTime();
+    }
     moduleHandler.update(cycleData);
 
     units.forEach((unit) => {
-      updateUnitAnimation({ ...cycleData, unit });
+      if (!cycleData.isPaused) updateUnitAnimation({ ...cycleData, unit });
       unit.update(cycleData);
       unitTickRoutine && unitTickRoutine(unit);
     });
 
-    _onUpdate && _onUpdate(cycleData);
-
     renderer.render(scene, camera);
+    _onUpdate && _onUpdate(cycleData);
   };
 
   const animate = () => {
@@ -134,12 +139,22 @@ export const createWorld = ({
   };
   window.addEventListener("resize", onWindowResize);
 
+  const pause = () => {
+    if (cycleData.isPaused) return;
+    cycleData.isPaused = true;
+    cycleData.pauseStartTime = Date.now();
+    pauseCallbacks.forEach((callback) => callback());
+  };
+
+  const resume = () => {
+    if (!cycleData.isPaused) return;
+    cycleData.isPaused = false;
+    cycleData.totalPauseTime += Date.now() - cycleData.pauseStartTime;
+    resumeCallbacks.forEach((callback) => callback());
+  };
+
   const onVisibilityChange = () => {
-    if (document.hidden) {
-      cycleData.pauseStartTime = Date.now();
-    } else {
-      cycleData.totalPauseTime += Date.now() - cycleData.pauseStartTime;
-    }
+    if (document.hidden) pause();
   };
   document.addEventListener("visibilitychange", onVisibilityChange);
 
@@ -167,6 +182,9 @@ export const createWorld = ({
           renderer,
           camera,
           scene,
+          cycleData,
+          pause,
+          resume,
           getModule: moduleHandler.getModule,
           addModule: moduleHandler.addModule,
           dispose: () => {
@@ -174,12 +192,30 @@ export const createWorld = ({
             window.removeEventListener("visibilitychange", onVisibilityChange);
           },
           onUpdate: (onUpdate) => (_onUpdate = onUpdate),
-          getUnit: (selector) => units.find(selector),
+          getUnit: (idOrSelector) =>
+            typeof idOrSelector === "function"
+              ? units.find(idOrSelector)
+              : units.find(({ id }) => id === idOrSelector),
           getStaticModel: (idOrSelector) =>
             (typeof idOrSelector === "function"
               ? staticModels.find(idOrSelector)
               : staticModels.find((model) => model.id === idOrSelector)
             ).model,
+          on: {
+            pause: (callback) => pauseCallbacks.push(callback),
+            resume: (callback) => resumeCallbacks.push(callback),
+          },
+          off: {
+            pause: (callback) =>
+              (pauseCallbacks = pauseCallbacks.filter(
+                (pauseCallback) => pauseCallback !== callback
+              )),
+            resume: (callback) =>
+              (resumeCallbacks = resumeCallbacks.filter(
+                (resumeCallback) => resumeCallback !== callback
+              )),
+          },
+          userData: {},
         };
 
         moduleHandler.init(world);

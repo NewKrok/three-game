@@ -2,15 +2,13 @@ import { ButtonKey } from "@newkrok/three-game/src/js/newkrok/three-game/control
 import { Key } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard.js";
 
 export const UnitActionId = {
+  PAUSE: "PAUSE",
   FORWARD: "FORWARD",
   BACKWARD: "BACKWARD",
   LEFT: "LEFT",
   RIGHT: "RIGHT",
   JUMP: "JUMP",
   SPRINT: "SPRINT",
-  DASH: "DASH",
-  CAMERA: "CAMERA",
-  AIM: "AIM",
   TOOL_ACTION: "TOOL_ACTION",
   CHOOSE_NEXT_TOOL: "CHOOSE_NEXT_TOOL",
   CHOOSE_PREV_TOOL: "CHOOSE_PREV_TOOL",
@@ -25,6 +23,12 @@ export const UnitActionId = {
 
 export const unitControllerConfig = {
   actionConfig: [
+    {
+      actionId: UnitActionId.PAUSE,
+      enableDuringPause: true,
+      keys: [Key.P],
+      gamepadButtons: [ButtonKey.Options],
+    },
     {
       actionId: UnitActionId.FORWARD,
       listenForDeactivation: true,
@@ -67,6 +71,13 @@ export const unitControllerConfig = {
   ],
 
   handlers: [
+    {
+      actionId: UnitActionId.PAUSE,
+      callback: ({ world }) => {
+        if (world.cycleData.isPaused) world.resume();
+        else world.pause();
+      },
+    },
     {
       actionId: UnitActionId.JUMP,
       callback: ({ unit }) => {

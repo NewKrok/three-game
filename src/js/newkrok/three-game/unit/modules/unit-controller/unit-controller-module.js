@@ -17,10 +17,11 @@ import { UnitModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modu
 
 const create = ({ world, unit, config: { actionConfig, handlers } }) => {
   const trigger = ({ actionId, value }) => {
-    handlers.forEach(
-      (entry) =>
-        entry.actionId === actionId && entry.callback({ unit, value, world })
-    );
+    if (!world.cycleData.isPaused || actionStates[actionId].enableDuringPause)
+      handlers.forEach(
+        (entry) =>
+          entry.actionId === actionId && entry.callback({ unit, value, world })
+      );
   };
 
   const actionStates = {};
@@ -76,15 +77,15 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
   };
 
   return {
-    update: () => {
+    update: ({ isPaused }) => {
       updateGamePad();
-      Object.keys(actionStates).forEach(
-        (actionId) =>
-          (actionStates[actionId] = calculateState({
+      Object.keys(actionStates).forEach((actionId) => {
+        if (!isPaused || actionStates[actionId].enableDuringPause)
+          actionStates[actionId] = calculateState({
             prevState: actionStates[actionId],
             actionId,
-          }))
-      );
+          });
+      });
       resetMouseStates();
     },
   };
