@@ -144,7 +144,7 @@ export const createUnit = ({
       instanceId,
       velocity: new THREE.Vector3(),
       playerDirection: new THREE.Vector3(),
-      playerCollider: new Capsule(
+      collider: new Capsule(
         position || new THREE.Vector3(0, config.radius, 0),
         position || new THREE.Vector3(0, config.height, 0),
         config.radius
@@ -154,12 +154,12 @@ export const createUnit = ({
       isJumpTriggered: 0,
     };
 
-    /* unit.playerCollider.position.copy(config.position);*/
+    /* unit.collider.position.copy(config.position);*/
 
     const playerCollisions = () => {
       if (!worldOctree)
         worldOctree = getWorldModule(WorldModuleId.OCTREE).worldOctree;
-      const result = worldOctree.capsuleIntersect(unit.playerCollider);
+      const result = worldOctree.capsuleIntersect(unit.collider);
       unit.onGround = false;
 
       if (result) {
@@ -171,9 +171,7 @@ export const createUnit = ({
           );
         }
 
-        unit.playerCollider.translate(
-          result.normal.multiplyScalar(result.depth)
-        );
+        unit.collider.translate(result.normal.multiplyScalar(result.depth));
       }
     };
 
@@ -210,12 +208,12 @@ export const createUnit = ({
         const deltaPosition = unit.velocity.clone().multiplyScalar(delta);
         const velocityStep = deltaPosition.clone().divideScalar(stepCount);
         for (let i = 0; i < stepCount; i++) {
-          unit.playerCollider.translate(velocityStep);
+          unit.collider.translate(velocityStep);
           playerCollisions();
         }
         checkGroundState(now);
 
-        unit.playerCollider.getCenter(model.position);
+        unit.collider.getCenter(model.position);
         model.position.y -= config.height / 2 + config.radius / 2;
       }
 
@@ -279,7 +277,7 @@ export const createUnit = ({
         unit.velocity.y = config.jumpForce;
         unit.isJumpTriggered = true;
       },
-      teleportTo: (position) => unit.playerCollider.translate(position),
+      teleportTo: (position) => unit.collider.translate(position),
       setRotation,
       update,
       getSocket: (socketId) => sockets[socketId],

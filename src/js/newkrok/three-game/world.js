@@ -42,6 +42,7 @@ const DEFAULT_WORLD_CONFIG = {
   modules: [],
   units: [],
   staticModels: [],
+  onProgress: null,
   onLoaded: null,
 };
 
@@ -177,7 +178,10 @@ export const createWorld = ({
         {}
       );
 
-      loadAssets(normalizedAssetsConfig).then(() => {
+      loadAssets({
+        ...normalizedAssetsConfig,
+        onProgress: normalizedWorldConfig.onProgress,
+      }).then(() => {
         const world = {
           renderer,
           camera,
@@ -192,6 +196,7 @@ export const createWorld = ({
             window.removeEventListener("visibilitychange", onVisibilityChange);
           },
           onUpdate: (onUpdate) => (_onUpdate = onUpdate),
+          getUnits: () => units,
           getUnit: (idOrSelector) =>
             typeof idOrSelector === "function"
               ? units.find(idOrSelector)
