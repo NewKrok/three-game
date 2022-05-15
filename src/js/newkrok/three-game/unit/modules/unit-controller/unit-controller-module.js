@@ -3,19 +3,14 @@ import {
   initGamepadManager,
   updateGamePad,
 } from "@newkrok/three-game/src/js/newkrok/three-game/control/gamepad.js";
-import {
-  getKeyState,
-  initKeyboardManager,
-} from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard.js";
-import {
-  getMouseState,
-  initMouseManager,
-  resetMouseStates,
-} from "@newkrok/three-game/src/js/newkrok/three-game/control/mouse.js";
 
 import { UnitModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
+import { createKeyboardManager } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard-manager.js";
+import { createMouseManager } from "@newkrok/three-game/src/js/newkrok/three-game/control/mouse-manager.js";
 
 const create = ({ world, unit, config: { actionConfig, handlers } }) => {
+  let isControlPaused = false;
+
   const trigger = ({ actionId, value }) => {
     if (!world.cycleData.isPaused || actionStates[actionId].enableDuringPause)
       handlers.forEach(
@@ -33,8 +28,8 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
     actionStates[props.actionId] = { pressed: false, value: 0, ...props };
   });
 
-  initKeyboardManager();
-  initMouseManager(trigger);
+  const keyboardManager = createKeyboardManager();
+  const mouseManager = createMouseManager();
   initGamepadManager();
 
   const calculateState = ({
@@ -47,8 +42,8 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
     const axisValue = axis ? getButtonState(axis).value : 0;
     const validatedAxisValue = axis ? axisValidator(axisValue) : false;
     const pressed =
-      prevState.keys?.some((key) => getKeyState(key)) ||
-      prevState.mouse?.some((key) => getMouseState(key)) ||
+      prevState.keys?.some((key) => keyboardManager.getState(key)) ||
+      prevState.mouse?.some((key) => mouseManager.getState(key)) ||
       prevState.gamepadButtons?.some(
         (gamepadButton) => getButtonState(gamepadButton).pressed
       );
@@ -78,6 +73,7 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
 
   return {
     update: ({ isPaused }) => {
+      if (isControlPaused) return;
       updateGamePad();
       Object.keys(actionStates).forEach((actionId) => {
         if (!isPaused || actionStates[actionId].enableDuringPause)
@@ -86,7 +82,13 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
             actionId,
           });
       });
-      resetMouseStates();
+      mouseManager.reset();
+    },
+    pause: () => (isControlPaused = true),
+    resume: () => (isControlPaused = false),
+    dispose: () => {
+      keyboardManager.dispose();
+      mouseManager.dispose();
     },
   };
 };

@@ -22,5 +22,6 @@ export const createModuleHandler = (modules) => {
     update: (cycleData) => {
       _modules.forEach((module) => module.update?.(cycleData));
     },
+    dispose: () => _modules.forEach((module) => module.dispose?.()),
   };
 };

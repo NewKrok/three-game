@@ -80,7 +80,19 @@ const create = ({ scene, modules }) => {
     });
   };
 
-  return { update, shoot };
+  const dispose = () => {
+    projectiles.forEach(({ mesh }) => {
+      mesh.dispose();
+      mesh.material.dispose();
+      mesh.geometry.dispose();
+      scene.remove(mesh);
+    });
+
+    projectileGeometry.dispose();
+    projectileMaterial.dispose();
+  };
+
+  return { update, shoot, dispose };
 };
 
 export const projectilesModule = {

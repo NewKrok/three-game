@@ -9,6 +9,7 @@ import { Capsule } from "three/examples/jsm/math/capsule.js";
 import { ModelSocketId } from "./unit-enums.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { createModuleHandler } from "../modules/module-handler.js";
+import { deepDispose } from "@newkrok/three-utils/src/js/newkrok/three-utils/dispose-utils.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
 let positionHelperGeometry;
@@ -75,7 +76,11 @@ export const createUnit = ({
 
   const sockets = {};
   const animations = [];
-  const registeredObject = {};
+  const registeredObjects = {};
+  const box = new THREE.Box3(
+    new THREE.Vector3(-config.radius, 0, -config.radius),
+    new THREE.Vector3(config.radius, config.height, config.radius)
+  );
 
   let inAirStartTime = 0;
   let selectedToolId;
@@ -87,10 +92,18 @@ export const createUnit = ({
   model.scale.copy(config.model.scale);
   if (position) model.position.copy(position);
 
+  // TODO: should be configurable?
+  /*
+  var boxHelper = new THREE.Box3Helper( box );
+	world.scene.add( boxHelper );
+  */
+
   const mixer = new THREE.AnimationMixer(model);
 
   const addAnimation = (key) => {
     const anim = getFBXSkeletonAnimation(config.animations[key]);
+    if (!anim) return;
+
     const animClip = mixer.clipAction(anim);
     animations[key] = animClip;
   };
@@ -152,6 +165,7 @@ export const createUnit = ({
       onGround: true,
       inAirTime: 0,
       isJumpTriggered: 0,
+      box,
     };
 
     /* unit.collider.position.copy(config.position);*/
@@ -217,6 +231,17 @@ export const createUnit = ({
         model.position.y -= config.height / 2 + config.radius / 2;
       }
 
+      box.min.set(
+        -config.radius + model.position.x,
+        0 + model.position.y,
+        -config.radius + model.position.z
+      );
+      box.max.set(
+        config.radius + model.position.x,
+        config.height + model.position.y,
+        config.radius + model.position.z
+      );
+
       moduleHandler.update(cycleData);
     };
 
@@ -230,15 +255,23 @@ export const createUnit = ({
       const socket = sockets[socketId];
       socket.add(object);
       object.visible = false;
-      registeredObject[id] = { object, ...props };
+      registeredObjects[id] = { object, ...props };
     };
 
-    const hideAllRegisteredObject = () =>
-      Object.values(registeredObject).forEach(
+    const hideAllRegisteredObjects = () =>
+      Object.values(registeredObjects).forEach(
         ({ object }) => (object.visible = false)
       );
 
     if (rotation) setRotation(rotation.z);
+
+    const dispose = () => {
+      Object.values(registeredObjects).forEach(({ object }) =>
+        deepDispose(object)
+      );
+      deepDispose(model);
+      moduleHandler.dispose();
+    };
 
     Object.assign(unit, {
       getModule: moduleHandler.getModule,
@@ -253,8 +286,6 @@ export const createUnit = ({
       animations,
       getSpeed: () =>
         config.speedModifier?.(unit, config.speed) ?? config.speed,
-      turn: 0,
-      isHanging: false,
       shimmyVelocity: 0,
       strafingDirection: 0,
       viewRotation: 0,
@@ -277,14 +308,15 @@ export const createUnit = ({
         unit.velocity.y = config.jumpForce;
         unit.isJumpTriggered = true;
       },
-      teleportTo: (position) => unit.collider.translate(position),
+      teleportTo: (position) =>
+        unit.collider.translate(position.clone().sub(model.position)),
       setRotation,
       update,
       getSocket: (socketId) => sockets[socketId],
       registerObjectIntoSocket,
-      getRegisteredObject: (id) => registeredObject[id],
-      getAllRegisteredObjects: () => Object.values(registeredObject),
-      hideAllRegisteredObject,
+      getRegisteredObject: (id) => registeredObjects[id],
+      getAllRegisteredObjects: () => Object.values(registeredObjects),
+      hideAllRegisteredObjects,
       registerTools: (tools) => {
         tools.forEach((props) => {
           registerObjectIntoSocket(props);
@@ -292,13 +324,14 @@ export const createUnit = ({
       },
       chooseTool: (id) => {
         selectedToolId = id;
-        hideAllRegisteredObject();
-        if (registeredObject[selectedToolId])
-          registeredObject[selectedToolId].object.visible = true;
+        hideAllRegisteredObjects();
+        if (registeredObjects[selectedToolId])
+          registeredObjects[selectedToolId].object.visible = true;
       },
-      getSelectedTool: () => registeredObject[selectedToolId],
+      getSelectedTool: () => registeredObjects[selectedToolId],
       updateAimPosition: (position) => aimPosition.copy(position),
       userData: {},
+      dispose,
     });
     moduleHandler.init({ world, unit });
     onComplete(unit);

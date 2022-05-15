@@ -2,6 +2,7 @@ export const WorldModuleId = {
   OCTREE: "OCTREE",
   PROJECTILES: "PROJECTILES",
   COLLECTIBLE: "COLLECTIBLE",
+  REGION: "REGION",
 };
 
 export const UnitModuleId = {

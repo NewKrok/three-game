@@ -1,5 +1,5 @@
 import { ButtonKey } from "@newkrok/three-game/src/js/newkrok/three-game/control/gamepad.js";
-import { Key } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard.js";
+import { Key } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard-manager.js";
 
 export const UnitActionId = {
   PAUSE: "PAUSE",

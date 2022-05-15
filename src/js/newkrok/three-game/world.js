@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import {
+  disposeAssets,
   getGLTFModel,
   getTexture,
   loadAssets,
@@ -8,6 +9,7 @@ import {
 
 import { createModuleHandler } from "./modules/module-handler.js";
 import { createUnit } from "./unit/unit";
+import { deepDispose } from "@newkrok/three-utils/src/js/newkrok/three-utils/dispose-utils.js";
 import { detect } from "detect-browser";
 import { patchObject } from "@newkrok/three-utils/src/js/newkrok/three-utils/object-utils.js";
 import { updateUnitAnimation } from "./unit/unit-animation";
@@ -16,6 +18,13 @@ export const getDefaultWorldConfig = () =>
   JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG));
 
 const DEFAULT_WORLD_CONFIG = {
+  assetsConfig: {
+    textures: [],
+    fbxModels: [],
+    fbxSkeletonAnimations: [],
+    gltfModels: [],
+    audio: [],
+  },
   scene: {
     background: 0x000000,
   },
@@ -49,7 +58,6 @@ const DEFAULT_WORLD_CONFIG = {
 export const createWorld = ({
   target,
   camera,
-  assetsConfig,
   worldConfig,
   unitConfig,
   unitTickRoutine,
@@ -161,6 +169,7 @@ export const createWorld = ({
 
   const promise = new Promise((resolve, reject) => {
     try {
+      const { assetsConfig } = normalizedWorldConfig;
       const normalizedAssetsConfig = Object.keys(assetsConfig).reduce(
         (prev, key) => {
           prev[key] = [
@@ -194,6 +203,21 @@ export const createWorld = ({
           dispose: () => {
             window.removeEventListener("resize", onWindowResize);
             window.removeEventListener("visibilitychange", onVisibilityChange);
+            units.forEach((unit) => unit.dispose());
+            disposeAssets();
+            deepDispose(scene);
+            moduleHandler.dispose();
+            if (
+              renderer.info.memory.geometries ||
+              renderer.info.memory.textures
+            ) {
+              console.warn(
+                `There is a memory leak in the app! Details: ${JSON.stringify(
+                  renderer.info
+                )}`
+              );
+            }
+            renderer.dispose();
           },
           onUpdate: (onUpdate) => (_onUpdate = onUpdate),
           getUnits: () => units,
