@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
-const create = ({ scene, modules }) => {
+const create = ({ world: { scene, getModule, cycleData } }) => {
   const projectileGeometry = new THREE.SphereGeometry(0.02, 8, 8);
   const projectileMaterial = new THREE.MeshLambertMaterial({ color: 0x0000ff });
 
@@ -12,9 +12,7 @@ const create = ({ scene, modules }) => {
   let worldOctreeCache;
   const getWorldOctree = () => {
     if (!worldOctreeCache)
-      worldOctreeCache = modules.find(
-        ({ id }) => id === WorldModuleId.OCTREE
-      ).worldOctree;
+      worldOctreeCache = getModule(WorldModuleId.OCTREE).worldOctree;
     return worldOctreeCache;
   };
 
@@ -46,9 +44,8 @@ const create = ({ scene, modules }) => {
       mesh.position.copy(collider.center);
     });
 
-    const now = Date.now();
     projectiles = projectiles.filter(({ mesh, bornTime, config }) => {
-      const old = now - bornTime > config.lifeTime;
+      const old = cycleData.now - bornTime > config.lifeTime;
       const isCollided = projectilesToRemove.includes(mesh);
       if (old || isCollided) {
         config?.on?.destroy({ mesh });
@@ -72,7 +69,7 @@ const create = ({ scene, modules }) => {
 
     projectiles.push({
       id: bulletIndex++,
-      bornTime: Date.now(),
+      bornTime: cycleData.now,
       mesh,
       collider,
       direction,

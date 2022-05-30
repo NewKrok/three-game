@@ -98,7 +98,9 @@ export const createUnit = ({
 	world.scene.add( boxHelper );
   */
 
-  const mixer = new THREE.AnimationMixer(model);
+  const mixer = Object.keys(config.animations).length
+    ? new THREE.AnimationMixer(model)
+    : null;
 
   const addAnimation = (key) => {
     const anim = getFBXSkeletonAnimation(config.animations[key]);

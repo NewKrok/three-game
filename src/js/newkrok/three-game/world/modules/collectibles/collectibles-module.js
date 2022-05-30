@@ -2,7 +2,7 @@ import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/mod
 import { getModel } from "@newkrok/three-game/src/js/newkrok/three-game/helpers/asset-helper.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
-const create = ({ getUnits }) => {
+const create = ({ world: { getUnits, cycleData } }) => {
   let collectibles = [];
 
   const activate = (collectible, now) => {
@@ -18,13 +18,12 @@ const create = ({ getUnits }) => {
     const model = getModel(config.model);
     model.position.copy(config.collisionObject.position);
 
-    const now = Date.now();
-
     const collectible = {
       id: getUniqueId(),
       isInited: false,
-      initialActivationTime: now + config.initialActivationDelay * 1000,
-      lastActivationTime: now,
+      initialActivationTime:
+        cycleData.now + config.initialActivationDelay * 1000,
+      lastActivationTime: cycleData.now,
       lastCollectionTime: 0,
       isCollected: false,
       config,
@@ -39,7 +38,9 @@ const create = ({ getUnits }) => {
     collectibles = collectibles.filter((element) => element !== collectible);
   };
 
-  const update = ({ now }) => {
+  const update = ({ isPaused, now }) => {
+    if (isPaused) return;
+
     collectibles.forEach((collectible) => {
       const {
         isInited,
@@ -89,10 +90,15 @@ const create = ({ getUnits }) => {
     });
   };
 
+  const dispose = () => {
+    collectibles = [];
+  };
+
   return {
     addCollectible,
     removeCollectible,
     update,
+    dispose,
   };
 };
 

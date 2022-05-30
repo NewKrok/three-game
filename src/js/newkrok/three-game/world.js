@@ -25,6 +25,7 @@ const DEFAULT_WORLD_CONFIG = {
     gltfModels: [],
     audio: [],
   },
+  unitConfig: [],
   scene: {
     background: 0x000000,
   },
@@ -59,28 +60,25 @@ export const createWorld = ({
   target,
   camera,
   worldConfig,
-  unitConfig,
   unitTickRoutine,
 }) => {
   const normalizedWorldConfig = patchObject(DEFAULT_WORLD_CONFIG, worldConfig);
 
-  let _onUpdate;
+  let onUpdateCallbacks = [];
 
   const staticModels = [];
   const units = [];
   const destroyables = [];
   const pauseCallbacks = [];
   const resumeCallbacks = [];
+  const disposeCallbacks = [];
 
   const cycleData = {
     isPaused: false,
     now: 0,
     delta: 0,
     elapsed: 0,
-    inactivePauseStartTime: 0,
-    inactiveTotalPauseTime: 0,
-    manualPauseStartTime: 0,
-    manualTotalPauseTime: 0,
+    totalPauseTime: 0,
   };
   const clock = new THREE.Clock();
   const browserInfo = detect();
@@ -120,9 +118,10 @@ export const createWorld = ({
   const update = () => {
     if (!cycleData.isPaused) {
       const rawDelta = clock.getDelta();
-      cycleData.now = Date.now() - cycleData.inactiveTotalPauseTime;
+      cycleData.now = Date.now() - cycleData.totalPauseTime;
       cycleData.delta = rawDelta > 0.1 ? 0.1 : rawDelta;
-      cycleData.elapsed = clock.getElapsedTime();
+      cycleData.elapsed =
+        clock.getElapsedTime() - cycleData.totalPauseTime / 1000;
     }
     moduleHandler.update(cycleData);
 
@@ -133,7 +132,7 @@ export const createWorld = ({
     });
 
     renderer.render(scene, camera);
-    _onUpdate && _onUpdate(cycleData);
+    onUpdateCallbacks.forEach((callback) => callback(cycleData));
   };
 
   const animate = () => {
@@ -169,7 +168,7 @@ export const createWorld = ({
 
   const promise = new Promise((resolve, reject) => {
     try {
-      const { assetsConfig } = normalizedWorldConfig;
+      const { assetsConfig, unitConfig } = normalizedWorldConfig;
       const normalizedAssetsConfig = Object.keys(assetsConfig).reduce(
         (prev, key) => {
           prev[key] = [
@@ -218,8 +217,8 @@ export const createWorld = ({
               );
             }
             renderer.dispose();
+            disposeCallbacks.forEach((callback) => callback());
           },
-          onUpdate: (onUpdate) => (_onUpdate = onUpdate),
           getUnits: () => units,
           getUnit: (idOrSelector) =>
             typeof idOrSelector === "function"
@@ -231,10 +230,16 @@ export const createWorld = ({
               : staticModels.find((model) => model.id === idOrSelector)
             ).model,
           on: {
+            update: (callback) => onUpdateCallbacks.push(callback),
             pause: (callback) => pauseCallbacks.push(callback),
             resume: (callback) => resumeCallbacks.push(callback),
+            dispose: (callback) => disposeCallbacks.push(callback),
           },
           off: {
+            update: (callback) =>
+              onUpdateCallbacks.filter(
+                (onUpdateCallbacks) => onUpdateCallbacks !== callback
+              ),
             pause: (callback) =>
               (pauseCallbacks = pauseCallbacks.filter(
                 (pauseCallback) => pauseCallback !== callback
@@ -243,11 +248,15 @@ export const createWorld = ({
               (resumeCallbacks = resumeCallbacks.filter(
                 (resumeCallback) => resumeCallback !== callback
               )),
+            dispose: (callback) =>
+              (disposeCallbacks = disposeCallbacks.filter(
+                (disposeCallback) => disposeCallback !== callback
+              )),
           },
           userData: {},
         };
 
-        moduleHandler.init(world);
+        moduleHandler.init({ world });
 
         applyConfigToWorld({
           world,

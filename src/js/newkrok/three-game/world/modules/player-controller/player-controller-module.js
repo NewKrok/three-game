@@ -4,18 +4,23 @@ import {
   updateGamePad,
 } from "@newkrok/three-game/src/js/newkrok/three-game/control/gamepad.js";
 
-import { UnitModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
+import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { createKeyboardManager } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard-manager.js";
 import { createMouseManager } from "@newkrok/three-game/src/js/newkrok/three-game/control/mouse-manager.js";
 
-const create = ({ world, unit, config: { actionConfig, handlers } }) => {
+const create = ({ world, config: { actionConfig, handlers } }) => {
   let isControlPaused = false;
+  let target;
 
   const trigger = ({ actionId, value }) => {
-    if (!world.cycleData.isPaused || actionStates[actionId].enableDuringPause)
+    if (
+      (target && !world.cycleData.isPaused) ||
+      actionStates[actionId].enableDuringPause
+    )
       handlers.forEach(
         (entry) =>
-          entry.actionId === actionId && entry.callback({ unit, value, world })
+          entry.actionId === actionId &&
+          entry.callback({ target, value, world })
       );
   };
 
@@ -72,6 +77,7 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
   };
 
   return {
+    setTarget: (value) => (target = value),
     update: ({ isPaused }) => {
       if (isControlPaused) return;
       updateGamePad();
@@ -93,8 +99,8 @@ const create = ({ world, unit, config: { actionConfig, handlers } }) => {
   };
 };
 
-export const unitControllerModule = {
-  id: UnitModuleId.UNIT_CONTROLLER,
+export const playerControllerModule = {
+  id: WorldModuleId.PLAYER_CONTROLLER,
   create,
   config: {},
 };

@@ -20,7 +20,7 @@ const create = ({ world, unit, config }) => {
         (key) => (abilityStates[key].isActive = false)
       );
       const abilityState = abilityStates[ability];
-      abilityState.lastActivationTime = Date.now();
+      abilityState.lastActivationTime = world.cycleData.now;
       abilityState.isActive = true;
     },
     deactivate: (ability) => {

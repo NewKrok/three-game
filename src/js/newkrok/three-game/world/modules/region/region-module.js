@@ -138,9 +138,15 @@ const create = ({ config: { debug } }) => {
     return createListeners(region);
   };
 
+  const dispose = () => {
+    regions = [];
+    collisionData = {};
+  };
+
   return {
     createRegion,
     update,
+    dispose,
   };
 };
 
