@@ -26,7 +26,7 @@ const create = ({ world, unit }) => {
     setLeftHandOffset: (offset) => leftHandOffset.copy(offset),
     update: () => {
       if (!cameraInstance) {
-        cameraInstance = world.tpsCamera?.instance;
+        cameraInstance = world.userData.tpsCamera?.instance;
         return;
       }
       if (unit.userData.useAim && unit.getSelectedTool()?.type) {

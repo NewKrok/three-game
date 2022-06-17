@@ -1,8 +1,9 @@
 import * as THREE from "three";
 
+import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
-const create = () => {
+const create = ({ config: {} }) => {
   let constraintGroups = [];
   const diff = new THREE.Vector3();
 
@@ -54,5 +55,9 @@ const create = () => {
 export const verletIntegrationModule = {
   id: WorldModuleId.VERLET_INTEGRATION,
   create,
-  config: { debug: false },
+  config: {
+    debug: false,
+    callLimit: CallLimits.CALL_60_PER_SECONDS,
+    forceCallCount: true,
+  },
 };

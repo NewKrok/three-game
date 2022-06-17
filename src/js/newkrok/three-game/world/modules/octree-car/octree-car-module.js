@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { Object3D } from "three";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { deepDispose } from "@newkrok/three-utils/src/js/newkrok/three-utils/dispose-utils.js";
@@ -7,13 +8,15 @@ import { deepMerge } from "@newkrok/three-utils/src/js/newkrok/three-utils/objec
 import { getModel } from "@newkrok/three-game/src/js/newkrok/three-game/helpers/asset-helper.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
+const CALL_REDUCER_ID = `@newkrok/${WorldModuleId.OCTREE_CAR}`;
+
 const create = ({ world: { scene, getModule }, config: { debug } }) => {
   let cars = [];
   const lookAtHelper = new THREE.Vector3();
   const speedVectorHelper = new THREE.Vector3();
 
   // TODO: handle rotation
-  const createCar = ({ id, position, config }) => {
+  const createCar = ({ id, position = new THREE.Vector3(), config }) => {
     const verletIntegration = getModule(WorldModuleId.VERLET_INTEGRATION);
     const { createSphere } = getModule(WorldModuleId.OCTREE);
 
@@ -319,7 +322,7 @@ const create = ({ world: { scene, getModule }, config: { debug } }) => {
 
         rearLeftWheel.mesh.rotation.x += Math.min(
           0.4,
-          (currentSpeed * 0.5 * Math.PI) / 180
+          (currentSpeed * 55 * delta * Math.PI) / 180
         );
         rearRightWheel.mesh.rotation.x = rearLeftWheel.mesh.rotation.x;
 
@@ -409,6 +412,7 @@ const create = ({ world: { scene, getModule }, config: { debug } }) => {
   const dispose = () => {
     cars.forEach((car) => deepDispose(car.model));
     cars = [];
+    clearCallReducerData(CALL_REDUCER_ID);
   };
 
   return {
@@ -421,5 +425,9 @@ const create = ({ world: { scene, getModule }, config: { debug } }) => {
 export const octreeCarModule = {
   id: WorldModuleId.OCTREE_CAR,
   create,
-  config: { debug: false },
+  config: {
+    debug: false,
+    callLimit: CallLimits.CALL_30_PER_SECONDS,
+    forceCallCount: true,
+  },
 };

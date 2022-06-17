@@ -2,8 +2,9 @@ import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/mod
 import { getModel } from "@newkrok/three-game/src/js/newkrok/three-game/helpers/asset-helper.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
-const create = ({ world: { getUnits, cycleData } }) => {
+const create = ({ world: { cycleData } }) => {
   let collectibles = [];
+  let collectors = [];
 
   const activate = (collectible, now) => {
     collectible.isInited = true;
@@ -11,6 +12,10 @@ const create = ({ world: { getUnits, cycleData } }) => {
     collectible.lastActivationTime = now;
     collectible.config.collisionObject.parent.add(collectible.model);
   };
+
+  const addCollector = (collector) => collectors.push(collector);
+  const removeCollector = (collector) =>
+    collectors.filter((element) => element !== collector);
 
   const addCollectible = (config) => {
     config.collisionObject.visible = false;
@@ -60,19 +65,15 @@ const create = ({ world: { getUnits, cycleData } }) => {
           on.activate?.(collectible);
         }
       } else {
-        getUnits().forEach((collector) => {
-          const { model: unitModel, collider } = collector;
+        collectors.forEach((collector) => {
+          const { collider } = collector;
           const {
             model: collectibleModel,
             config: { interactionRadius, isUserInteractionNeeded, on },
           } = collectible;
           const radius = collider.radius + interactionRadius;
           const radius2 = radius ** 2;
-          for (const point of [
-            collider.start,
-            collider.end,
-            unitModel.position,
-          ]) {
+          for (const point of [collider.start, collider.end]) {
             const distance = point.distanceToSquared(collectibleModel.position);
             if (distance < radius2) {
               on.interact?.({ collector, collectible });
@@ -92,9 +93,12 @@ const create = ({ world: { getUnits, cycleData } }) => {
 
   const dispose = () => {
     collectibles = [];
+    collectors = [];
   };
 
   return {
+    addCollector,
+    removeCollector,
     addCollectible,
     removeCollectible,
     update,
@@ -103,7 +107,7 @@ const create = ({ world: { getUnits, cycleData } }) => {
 };
 
 export const collectiblesModule = {
-  id: WorldModuleId.COLLECTIBLE,
+  id: WorldModuleId.COLLECTIBLES,
   create,
   config: {},
 };

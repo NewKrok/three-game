@@ -200,15 +200,10 @@ export const createUnit = ({
       else unit.inAirTime = now - inAirStartTime;
     };
 
-    const update = (cycleData) => {
-      const { now, delta, isPaused } = cycleData;
+    const update = (delta, cycleData) => {
+      const { now, isPaused } = cycleData;
 
       if (!isPaused) {
-        if (unit.isShootTriggered && !unit.wasShootTriggered) {
-          unit.shootStartTime = now;
-          unit.wasShootTriggered = true;
-        }
-
         const GRAVITY = 40;
         let damping = Math.exp(-8 * delta) - 1;
         if (!unit.onGround) {

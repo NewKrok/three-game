@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
 const create = ({ config: { debug } }) => {
@@ -123,7 +124,7 @@ const create = ({ config: { debug } }) => {
     }
 
     const box = new THREE.Box3();
-    area.geometry.computeBoundingBox();
+    area.updateMatrixWorld(true);
     box.copy(area.geometry.boundingBox).applyMatrix4(area.matrixWorld);
 
     if (debug) {
@@ -153,5 +154,5 @@ const create = ({ config: { debug } }) => {
 export const regionModule = {
   id: WorldModuleId.REGION,
   create,
-  config: { debug: false },
+  config: { debug: false, callLimit: CallLimits.CALL_30_PER_SECONDS },
 };

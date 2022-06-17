@@ -78,6 +78,7 @@ const create = ({ world, config: { actionConfig, handlers } }) => {
 
   return {
     setTarget: (value) => (target = value),
+    getTarget: () => target,
     update: ({ isPaused }) => {
       if (isControlPaused) return;
       updateGamePad();

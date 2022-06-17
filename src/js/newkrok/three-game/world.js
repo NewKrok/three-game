@@ -8,11 +8,9 @@ import {
 } from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
 
 import { createModuleHandler } from "./modules/module-handler.js";
-import { createUnit } from "./unit/unit";
 import { deepDispose } from "@newkrok/three-utils/src/js/newkrok/three-utils/dispose-utils.js";
 import { detect } from "detect-browser";
 import { patchObject } from "@newkrok/three-utils/src/js/newkrok/three-utils/object-utils.js";
-import { updateUnitAnimation } from "./unit/unit-animation";
 
 export const getDefaultWorldConfig = () =>
   JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG));
@@ -25,7 +23,6 @@ const DEFAULT_WORLD_CONFIG = {
     gltfModels: [],
     audio: [],
   },
-  unitConfig: [],
   scene: {
     background: 0x000000,
   },
@@ -50,37 +47,33 @@ const DEFAULT_WORLD_CONFIG = {
   },
   entities: [],
   modules: [],
-  units: [],
   staticModels: [],
   onProgress: null,
   onLoaded: null,
 };
 
-export const createWorld = ({
-  target,
-  camera,
-  worldConfig,
-  unitTickRoutine,
-}) => {
+export const createWorld = ({ target, worldConfig }) => {
   const normalizedWorldConfig = patchObject(DEFAULT_WORLD_CONFIG, worldConfig);
+
+  const clock = new THREE.Clock();
 
   let onUpdateCallbacks = [];
 
   const staticModels = [];
-  const units = [];
   const destroyables = [];
   const pauseCallbacks = [];
   const resumeCallbacks = [];
   const disposeCallbacks = [];
 
+  let _camera = new THREE.PerspectiveCamera();
+
   const cycleData = {
     isPaused: false,
-    now: 0,
+    now: Date.now(),
     delta: 0,
     elapsed: 0,
-    totalPauseTime: 0,
+    startTime: 0,
   };
-  const clock = new THREE.Clock();
   const browserInfo = detect();
 
   const scene = new THREE.Scene();
@@ -117,22 +110,16 @@ export const createWorld = ({
 
   const update = () => {
     if (!cycleData.isPaused) {
-      const rawDelta = clock.getDelta();
-      cycleData.now = Date.now() - cycleData.totalPauseTime;
-      cycleData.delta = rawDelta > 0.1 ? 0.1 : rawDelta;
-      cycleData.elapsed =
-        clock.getElapsedTime() - cycleData.totalPauseTime / 1000;
+      if (!cycleData.startTime)
+        cycleData.now = cycleData.startTime = Date.now();
+      cycleData.delta = Math.min(0.05, clock.getDelta());
+      cycleData.elapsed += cycleData.delta * 1000;
+      cycleData.now = cycleData.startTime + cycleData.elapsed;
+      moduleHandler.update(cycleData);
     }
-    moduleHandler.update(cycleData);
 
-    units.forEach((unit) => {
-      if (!cycleData.isPaused) updateUnitAnimation({ ...cycleData, unit });
-      unit.update(cycleData);
-      unitTickRoutine && unitTickRoutine(unit);
-    });
-
-    renderer.render(scene, camera);
     onUpdateCallbacks.forEach((callback) => callback(cycleData));
+    renderer.render(scene, _camera);
   };
 
   const animate = () => {
@@ -141,8 +128,8 @@ export const createWorld = ({
   };
 
   const onWindowResize = () => {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    _camera.aspect = window.innerWidth / window.innerHeight;
+    _camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   };
   window.addEventListener("resize", onWindowResize);
@@ -157,7 +144,6 @@ export const createWorld = ({
   const resume = () => {
     if (!cycleData.isPaused) return;
     cycleData.isPaused = false;
-    cycleData.totalPauseTime += Date.now() - cycleData.pauseStartTime;
     resumeCallbacks.forEach((callback) => callback());
   };
 
@@ -168,7 +154,7 @@ export const createWorld = ({
 
   const promise = new Promise((resolve, reject) => {
     try {
-      const { assetsConfig, unitConfig } = normalizedWorldConfig;
+      const { assetsConfig } = normalizedWorldConfig;
       const normalizedAssetsConfig = Object.keys(assetsConfig).reduce(
         (prev, key) => {
           prev[key] = [
@@ -192,17 +178,17 @@ export const createWorld = ({
       }).then(() => {
         const world = {
           renderer,
-          camera,
+          camera: _camera,
           scene,
           cycleData,
           pause,
           resume,
+          setCamera: (camera) => (_camera = camera),
           getModule: moduleHandler.getModule,
           addModule: moduleHandler.addModule,
           dispose: () => {
             window.removeEventListener("resize", onWindowResize);
             window.removeEventListener("visibilitychange", onVisibilityChange);
-            units.forEach((unit) => unit.dispose());
             disposeAssets();
             deepDispose(scene);
             moduleHandler.dispose();
@@ -219,11 +205,6 @@ export const createWorld = ({
             renderer.dispose();
             disposeCallbacks.forEach((callback) => callback());
           },
-          getUnits: () => units,
-          getUnit: (idOrSelector) =>
-            typeof idOrSelector === "function"
-              ? units.find(idOrSelector)
-              : units.find(({ id }) => id === idOrSelector),
           getStaticModel: (idOrSelector) =>
             (typeof idOrSelector === "function"
               ? staticModels.find(idOrSelector)
@@ -261,16 +242,14 @@ export const createWorld = ({
         applyConfigToWorld({
           world,
           staticModels,
-          units,
           destroyables,
           worldConfig,
-          unitConfig,
         });
 
         normalizedWorldConfig.onLoaded && normalizedWorldConfig.onLoaded(world);
 
         resolve(world);
-        animate();
+        setTimeout(animate, 1);
       });
     } catch (e) {
       Error(`Something wrong happened: ${e}`);
@@ -280,13 +259,7 @@ export const createWorld = ({
   return promise;
 };
 
-const applyConfigToWorld = ({
-  world,
-  staticModels,
-  units,
-  worldConfig,
-  unitConfig,
-}) => {
+const applyConfigToWorld = ({ world, staticModels, worldConfig }) => {
   const { scene } = world;
   if (worldConfig.skybox.textures.length > 0) {
     const materialArray = worldConfig.skybox.textures.map(
@@ -312,20 +285,5 @@ const applyConfigToWorld = ({
     if (rotation) model.scene.rotation.set(rotation.x, rotation.y, rotation.z);
     scene.add(model.scene);
     staticModels.push({ id, model });
-  });
-
-  worldConfig.units.forEach(({ id, unitId, position, rotation }) => {
-    createUnit({
-      world,
-      id,
-      position: typeof position === "function" ? position(world) : position,
-      rotation: typeof rotation === "function" ? rotation(world) : rotation,
-      config: unitConfig[unitId],
-      getWorldModule: world.getModule,
-      onComplete: (unit) => {
-        scene.add(unit.model);
-        units.push(unit);
-      },
-    });
   });
 };

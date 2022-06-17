@@ -1,8 +1,9 @@
 import * as THREE from "three";
 
+import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
-const create = ({ world: { scene, getModule, cycleData } }) => {
+const create = ({ world: { scene, getModule, cycleData }, config: {} }) => {
   const projectileGeometry = new THREE.SphereGeometry(0.02, 8, 8);
   const projectileMaterial = new THREE.MeshLambertMaterial({ color: 0x0000ff });
 
@@ -16,15 +17,15 @@ const create = ({ world: { scene, getModule, cycleData } }) => {
     return worldOctreeCache;
   };
 
-  const update = () => {
+  const update = ({ delta }) => {
     const projectilesToRemove = [];
 
     projectiles.forEach(({ mesh, collider, direction, config }) => {
       const worldOctree = getWorldOctree();
-      const collisionStep = 0.02;
+      const collisionStep = 2 * delta;
       let vector = direction.clone().setLength(collisionStep);
 
-      let maxDistance = config.speed;
+      let maxDistance = config.speed * delta;
       let distance = 0;
       while (distance < maxDistance && !worldOctree.sphereIntersect(collider)) {
         distance += collisionStep;
@@ -95,5 +96,8 @@ const create = ({ world: { scene, getModule, cycleData } }) => {
 export const projectilesModule = {
   id: WorldModuleId.PROJECTILES,
   create,
-  config: {},
+  config: {
+    callLimit: CallLimits.CALL_30_PER_SECONDS,
+    forceCallCount: true,
+  },
 };

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 
+import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { Octree } from "three/examples/jsm/math/Octree.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
@@ -119,5 +120,5 @@ const create = ({ config: { gravity = 40, mass = 1 } }) => {
 export const octreeModule = {
   id: WorldModuleId.OCTREE,
   create,
-  config: {},
+  config: { callLimit: CallLimits.CALL_30_PER_SECONDS, forceCallCount: true },
 };
