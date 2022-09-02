@@ -69,21 +69,37 @@ const create = ({ world: { cycleData } }) => {
           const { collider } = collector;
           const {
             model: collectibleModel,
-            config: { interactionRadius, isUserInteractionNeeded, on },
+            config: {
+              interactionRadius,
+              isUserInteractionNeeded,
+              collisionAlgorithm,
+              on,
+            },
           } = collectible;
-          const radius = collider.radius + interactionRadius;
-          const radius2 = radius ** 2;
-          for (const point of [collider.start, collider.end]) {
-            const distance = point.distanceToSquared(collectibleModel.position);
-            if (distance < radius2) {
-              on.interact?.({ collector, collectible });
-              if (!isUserInteractionNeeded) {
-                collectible.isCollected = true;
-                collectible.lastCollectionTime = now;
-                collectible.model.parent?.remove(collectible.model);
-                on.collect?.({ collector, collectible });
+
+          const onCollect = () => {
+            on.interact?.({ collector, collectible });
+            if (!isUserInteractionNeeded) {
+              collectible.isCollected = true;
+              collectible.lastCollectionTime = now;
+              collectible.model.parent?.remove(collectible.model);
+              on.collect?.({ collector, collectible });
+            }
+          };
+
+          if (collisionAlgorithm) {
+            if (collisionAlgorithm({ collector, collectible })) onCollect();
+          } else {
+            const radius = collider.radius + interactionRadius;
+            const radius2 = radius ** 2;
+            for (const point of [collider.start, collider.end]) {
+              const distance = point.distanceToSquared(
+                collectibleModel.position
+              );
+              if (distance < radius2) {
+                onCollect();
+                break;
               }
-              break;
             }
           }
         });

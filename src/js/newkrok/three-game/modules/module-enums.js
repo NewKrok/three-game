@@ -8,6 +8,8 @@ export const WorldModuleId = {
   UNITS: "UNITS",
   PLAYER_CONTROLLER: "PLAYER_CONTROLLER",
   THIRD_PERSON_CAMERA: "THIRD_PERSON_CAMERA",
+  NAPE: "NAPE",
+  NAPE_CAR: "NAPE_CAR",
 };
 
 export const UnitModuleId = {

@@ -8,8 +8,6 @@ import { deepMerge } from "@newkrok/three-utils/src/js/newkrok/three-utils/objec
 import { getModel } from "@newkrok/three-game/src/js/newkrok/three-game/helpers/asset-helper.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
-const CALL_REDUCER_ID = `@newkrok/${WorldModuleId.OCTREE_CAR}`;
-
 const create = ({ world: { scene, getModule }, config: { debug } }) => {
   let cars = [];
   const lookAtHelper = new THREE.Vector3();
@@ -412,7 +410,6 @@ const create = ({ world: { scene, getModule }, config: { debug } }) => {
   const dispose = () => {
     cars.forEach((car) => deepDispose(car.model));
     cars = [];
-    clearCallReducerData(CALL_REDUCER_ID);
   };
 
   return {
