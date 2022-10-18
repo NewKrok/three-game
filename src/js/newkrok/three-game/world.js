@@ -1,16 +1,10 @@
 import * as THREE from "three";
 
-import {
-  disposeAssets,
-  getGLTFModel,
-  getTexture,
-  loadAssets,
-} from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
-
+import { AssetsUtils } from "@newkrok/three-utils/assets";
+import { DisposeUtils } from "@newkrok/three-utils";
+import { ObjectUtils } from "@newkrok/three-utils";
 import { createModuleHandler } from "./modules/module-handler.js";
-import { deepDispose } from "@newkrok/three-utils/src/js/newkrok/three-utils/dispose-utils.js";
 import { detect } from "detect-browser";
-import { patchObject } from "@newkrok/three-utils/src/js/newkrok/three-utils/object-utils.js";
 
 export const getDefaultWorldConfig = () =>
   JSON.parse(JSON.stringify(DEFAULT_WORLD_CONFIG));
@@ -53,7 +47,10 @@ const DEFAULT_WORLD_CONFIG = {
 };
 
 export const createWorld = ({ target, worldConfig }) => {
-  const normalizedWorldConfig = patchObject(DEFAULT_WORLD_CONFIG, worldConfig);
+  const normalizedWorldConfig = ObjectUtils.patchObject(
+    DEFAULT_WORLD_CONFIG,
+    worldConfig
+  );
 
   const clock = new THREE.Clock();
 
@@ -172,7 +169,7 @@ export const createWorld = ({ target, worldConfig }) => {
         {}
       );
 
-      loadAssets({
+      AssetsUtils.loadAssets({
         ...normalizedAssetsConfig,
         onProgress: normalizedWorldConfig.onProgress,
       }).then(() => {
@@ -189,8 +186,8 @@ export const createWorld = ({ target, worldConfig }) => {
           dispose: () => {
             window.removeEventListener("resize", onWindowResize);
             window.removeEventListener("visibilitychange", onVisibilityChange);
-            disposeAssets();
-            deepDispose(scene);
+            AssetsUtils.disposeAssets();
+            DisposeUtils.deepDispose(scene);
             moduleHandler.dispose();
             if (
               renderer.info.memory.geometries ||
@@ -265,7 +262,7 @@ const applyConfigToWorld = ({ world, staticModels, worldConfig }) => {
     const materialArray = worldConfig.skybox.textures.map(
       (textureId) =>
         new THREE.MeshBasicMaterial({
-          map: getTexture(textureId),
+          map: AssetsUtils.getTexture(textureId),
           side: THREE.BackSide,
         })
     );
@@ -280,7 +277,7 @@ const applyConfigToWorld = ({ world, staticModels, worldConfig }) => {
   }
 
   worldConfig.staticModels.forEach(({ id, modelId, position, rotation }) => {
-    const model = getGLTFModel(modelId);
+    const model = AssetsUtils.getGLTFModel(modelId);
     if (position) model.scene.position.copy(position);
     if (rotation) model.scene.rotation.set(rotation.x, rotation.y, rotation.z);
     scene.add(model.scene);

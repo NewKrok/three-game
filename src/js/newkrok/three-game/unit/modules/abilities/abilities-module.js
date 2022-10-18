@@ -9,30 +9,31 @@ const create = ({ world, unit, config }) => {
         lastCastingTime: 0,
         isCasted: false,
         isActive: false,
+        isDisabled: false,
       },
     }),
     {}
   );
 
   return {
-    activate: (ability) => {
+    activate: (abilityId) => {
       Object.keys(abilityStates).forEach(
         (key) => (abilityStates[key].isActive = false)
       );
-      const abilityState = abilityStates[ability];
+      const abilityState = abilityStates[abilityId];
       abilityState.lastActivationTime = world.cycleData.now;
       abilityState.isActive = true;
     },
-    deactivate: (ability) => {
-      const abilityState = abilityStates[ability];
-      abilityState.isActive = false;
-    },
+    deactivate: (abilityId) => (abilityStates[abilityId].isActive = false),
+    enableAbility: (abilityId) => (abilityStates[abilityId].isDisabled = false),
+    disableAbility: (abilityId) => (abilityStates[abilityId].isDisabled = true),
     update: ({ now }) => {
       Object.keys(abilityStates).forEach((key) => {
         const abilityState = abilityStates[key];
         const abilityConfig = config[key];
         if (
           abilityState.isActive &&
+          !abilityState.isDisabled &&
           !abilityState.isCasted &&
           now - abilityState.lastActivationTime >= abilityConfig.castingTime
         ) {

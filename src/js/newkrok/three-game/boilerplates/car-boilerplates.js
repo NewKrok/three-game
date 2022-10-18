@@ -10,7 +10,7 @@ export const basicCar = {
   },
   wheel: {
     radius: 0.4,
-    mass: 50,
+    mass: 1,
   },
   speedReductionByCollision: 0.85,
   maxSpeed: 60,

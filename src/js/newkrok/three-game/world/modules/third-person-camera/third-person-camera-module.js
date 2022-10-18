@@ -5,7 +5,12 @@ import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/mod
 
 const create = ({ config }) => {
   let target, q;
-  let maxDistance, maxDistanceByCollision, currentDistance, maxCameraOffset;
+  let maxDistance,
+    maxDistanceByCollision,
+    currentDistance,
+    maxCameraOffset,
+    targetQuaternionOffset,
+    targetQuaternionHelper;
   let _worldOctree;
   let useTargetRotation = false;
   let targetRotation = 0;
@@ -75,16 +80,16 @@ const create = ({ config }) => {
     rotation.y = Math.min(config.yBoundaries.max, rotation.y);
   };
 
-  const setPositionOffset = (value) => {
-    requestedPositionOffset.copy(value);
-    normalizePositionOffset();
-  };
-
   const normalizeRotation = (x) => {
     rotation.y = Math.max(config.yBoundaries.min, rotation.y);
     rotation.y = Math.min(config.yBoundaries.max, rotation.y);
     if (x !== null) q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), -rotation.x);
 
+    normalizePositionOffset();
+  };
+
+  const setPositionOffset = (value) => {
+    requestedPositionOffset.copy(value);
     normalizePositionOffset();
   };
 
@@ -96,6 +101,13 @@ const create = ({ config }) => {
       if (target) q = target.quaternion.clone();
     },
     getTarget: () => target,
+    setTargetQuaternionOffset: (quaternion) => {
+      targetQuaternionOffset = quaternion;
+      targetQuaternionHelper = targetQuaternionHelper || new THREE.Quaternion();
+    },
+    jumpToTarget: () => {
+      if (target) realTargetPosition.position.copy(target.position);
+    },
     orientToTarget: () => {
       if (!target) return;
 
@@ -111,7 +123,12 @@ const create = ({ config }) => {
 
       if (target) {
         if (useTargetRotation) {
-          q.slerp(target.quaternion, config.lerp.targetRotation * delta);
+          const targetQuaternion = targetQuaternionHelper
+            ? targetQuaternionHelper
+                .copy(target.quaternion)
+                .multiply(targetQuaternionOffset)
+            : target.quaternion;
+          q.slerp(targetQuaternion, config.lerp.targetRotation * delta);
           rotation.x = -rotationEuler.setFromQuaternion(q).y;
           normalizeRotation(null);
         }

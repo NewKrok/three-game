@@ -5,14 +5,14 @@ import { Octree } from "three/examples/jsm/math/Octree.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
 
-const create = ({ config: { gravity = 40, mass = 1 } }) => {
+const create = ({ config: { gravity = 40 } }) => {
   const worldOctree = new Octree();
   const normalVectorHelper = new THREE.Vector3();
   const velocity1Helper = new THREE.Vector3();
   const velocity2Helper = new THREE.Vector3();
   let spheres = [];
 
-  const createSphere = ({ id, radius, position, mesh, material }) => {
+  const createSphere = ({ id, radius, position, mesh, material, mass = 1 }) => {
     let sphereMesh = mesh;
     if (!sphereMesh) {
       const sphereGeometry = new THREE.IcosahedronGeometry(radius, 5);
@@ -26,6 +26,7 @@ const create = ({ config: { gravity = 40, mass = 1 } }) => {
     const collisionListeners = [];
     const sphere = {
       id: id ?? getUniqueId(),
+      mass,
       mesh: sphereMesh,
       collider: new THREE.Sphere(
         sphereMesh.position.clone(position),
@@ -97,7 +98,7 @@ const create = ({ config: { gravity = 40, mass = 1 } }) => {
         sphere.collider.center.add(result.normal.multiplyScalar(result.depth));
         sphere.collisionListeners.forEach((callback) => callback(result));
       }
-      sphere.velocity.y -= gravity * mass * delta;
+      sphere.velocity.y -= gravity * sphere.mass * delta;
 
       const damping = Math.exp(-1.5 * delta) - 1;
       sphere.velocity.addScaledVector(sphere.velocity, damping);

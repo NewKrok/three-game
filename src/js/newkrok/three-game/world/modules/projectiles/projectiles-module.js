@@ -3,31 +3,32 @@ import * as THREE from "three";
 import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
-const create = ({ world: { scene, getModule, cycleData }, config: {} }) => {
+const create = ({ world: { scene, cycleData }, config }) => {
+  let collisionDetectors = config.collisionDetectors || [];
   const projectileGeometry = new THREE.SphereGeometry(0.02, 8, 8);
   const projectileMaterial = new THREE.MeshLambertMaterial({ color: 0x0000ff });
 
   let projectiles = [];
   let bulletIndex = 0;
 
-  let worldOctreeCache;
-  const getWorldOctree = () => {
-    if (!worldOctreeCache)
-      worldOctreeCache = getModule(WorldModuleId.OCTREE).worldOctree;
-    return worldOctreeCache;
-  };
+  const vectorHelper = new THREE.Vector3();
 
   const update = ({ delta }) => {
     const projectilesToRemove = [];
 
-    projectiles.forEach(({ mesh, collider, direction, config }) => {
-      const worldOctree = getWorldOctree();
+    projectiles.forEach(({ mesh, collider, direction, config, userData }) => {
       const collisionStep = 2 * delta;
-      let vector = direction.clone().setLength(collisionStep);
+      vectorHelper.copy(direction);
+      let vector = vectorHelper.setLength(collisionStep);
 
       let maxDistance = config.speed * delta;
       let distance = 0;
-      while (distance < maxDistance && !worldOctree.sphereIntersect(collider)) {
+      while (
+        distance < maxDistance &&
+        !collisionDetectors.some((collisionDetector) =>
+          collisionDetector({ collider, userData })
+        )
+      ) {
         distance += collisionStep;
         collider.center.add(vector);
       }
@@ -35,21 +36,16 @@ const create = ({ world: { scene, getModule, cycleData }, config: {} }) => {
 
       if (distance < maxDistance) {
         projectilesToRemove.push(mesh);
-        config?.on?.collision({ mesh, position: collider.center });
-        /*const destroyable = destroyables.find(
-          ({ body }) => intersects[0].object === body
-        );
-        if (destroyable) destroyable.damage(1);
-*/
+        config?.on?.collision({ mesh, position: collider.center, userData });
       }
       mesh.position.copy(collider.center);
     });
 
-    projectiles = projectiles.filter(({ mesh, bornTime, config }) => {
+    projectiles = projectiles.filter(({ mesh, bornTime, config, userData }) => {
       const old = cycleData.now - bornTime > config.lifeTime;
       const isCollided = projectilesToRemove.includes(mesh);
       if (old || isCollided) {
-        config?.on?.destroy({ mesh });
+        config?.on?.destroy({ mesh, userData });
         scene.remove(mesh);
       }
 
@@ -57,26 +53,44 @@ const create = ({ world: { scene, getModule, cycleData }, config: {} }) => {
     });
   };
 
-  const shoot = ({ startPosition, direction, scene, config }) => {
-    const mesh = new THREE.Mesh(projectileGeometry, projectileMaterial);
-    mesh.castShadow = true;
-    mesh.receiveShadow = false;
-    mesh.position.copy(startPosition);
-    scene.add(mesh);
+  const shoot = ({
+    startPosition = null,
+    direction,
+    scene,
+    mesh,
+    config,
+    userData = null,
+  }) => {
+    const selectedMesh =
+      mesh || new THREE.Mesh(projectileGeometry, projectileMaterial);
+    if (!mesh) {
+      selectedMesh.castShadow = true;
+      selectedMesh.receiveShadow = false;
+    }
+    if (startPosition) selectedMesh.position.copy(startPosition);
+    if (scene) scene.add(selectedMesh);
 
-    const collider = new THREE.Sphere(mesh.position.clone(), 0.02);
+    const collider = new THREE.Sphere(selectedMesh.position.clone(), 0.02);
 
-    config?.on?.shoot({ mesh });
+    config?.on?.shoot({ mesh: selectedMesh });
 
     projectiles.push({
       id: bulletIndex++,
       bornTime: cycleData.now,
-      mesh,
+      mesh: selectedMesh,
       collider,
       direction,
       config,
+      userData,
     });
   };
+
+  const addCollisionDetector = (collisionDetector) =>
+    collisionDetectors.push(collisionDetector);
+  const removeCollisionDetector = (collisionDetector) =>
+    (collisionDetectors = collisionDetectors.filter(
+      (entry) => entry !== collisionDetector
+    ));
 
   const dispose = () => {
     projectiles.forEach(({ mesh }) => {
@@ -86,11 +100,19 @@ const create = ({ world: { scene, getModule, cycleData }, config: {} }) => {
       scene.remove(mesh);
     });
 
+    collisionDetectors = null;
+
     projectileGeometry.dispose();
     projectileMaterial.dispose();
   };
 
-  return { update, shoot, dispose };
+  return {
+    update,
+    shoot,
+    addCollisionDetector,
+    removeCollisionDetector,
+    dispose,
+  };
 };
 
 export const projectilesModule = {
@@ -99,5 +121,6 @@ export const projectilesModule = {
   config: {
     callLimit: CallLimits.CALL_30_PER_SECONDS,
     forceCallCount: true,
+    collisionDetectors: [],
   },
 };
