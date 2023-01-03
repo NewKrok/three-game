@@ -29,7 +29,9 @@ export const createModuleHandler = (modules) => {
       _modules.forEach((module) => {
         if (module.update) {
           if (module.config?.callLimit) {
-            const reducerId = `@newkrok/reducer/${module.id}`;
+            const reducerId = `@newkrok/reducer/${module.id}${
+              customProps.id ? `-${customProps.id}` : ""
+            }`;
             const calculatedDelta =
               module.config?.forceCallCount &&
               module.config?.callLimit === CallLimits.NO_LIMIT

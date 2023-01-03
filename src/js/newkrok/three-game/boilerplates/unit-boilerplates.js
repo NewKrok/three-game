@@ -9,7 +9,7 @@ export const basicUnit = {
     scale: { x: 1, y: 1, z: 1 },
     traverseCallback: null,
     debug: {
-      showSockets: true,
+      showSockets: false,
     },
   },
   height: 1.8,

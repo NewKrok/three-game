@@ -4,7 +4,7 @@ export const updateUnitAnimation = ({ delta, unit }) => {
   if (unit.mixer) {
     const currentUnitState = {
       ...unit,
-      cache: unit.config.animationConfig.createCache(unit),
+      cache: unit.config.animationConfig.createCache?.(unit) || {},
     };
 
     const animation = unit.config.animationConfig.rules.find(({ condition }) =>

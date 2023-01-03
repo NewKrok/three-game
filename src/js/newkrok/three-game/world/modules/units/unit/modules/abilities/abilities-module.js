@@ -24,9 +24,9 @@ const create = ({ world, unit, config }) => {
       abilityState.lastActivationTime = world.cycleData.now;
       abilityState.isActive = true;
     },
-    deactivate: (abilityId) => (abilityStates[abilityId].isActive = false),
-    enableAbility: (abilityId) => (abilityStates[abilityId].isDisabled = false),
-    disableAbility: (abilityId) => (abilityStates[abilityId].isDisabled = true),
+    deactivate: (abilityId) => abilityStates[abilityId].isActive = false,
+    enableAbility: (abilityId) => abilityStates[abilityId].isDisabled = false,
+    disableAbility: (abilityId) => abilityStates[abilityId].isDisabled = true,
     update: ({ now }) => {
       Object.keys(abilityStates).forEach((key) => {
         const abilityState = abilityStates[key];

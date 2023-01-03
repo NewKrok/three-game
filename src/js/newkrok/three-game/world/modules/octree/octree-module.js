@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
 import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
+import { Capsule } from "three/examples/jsm/math/capsule.js";
 import { Octree } from "three/examples/jsm/math/Octree.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
@@ -11,6 +12,7 @@ const create = ({ config: { gravity = 40 } }) => {
   const velocity1Helper = new THREE.Vector3();
   const velocity2Helper = new THREE.Vector3();
   let spheres = [];
+  let capsules = [];
 
   const createSphere = ({ id, radius, position, mesh, material, mass = 1 }) => {
     let sphereMesh = mesh;
@@ -43,6 +45,56 @@ const create = ({ config: { gravity = 40 } }) => {
     spheres.push(sphere);
 
     return sphere;
+  };
+
+  const createCapsule = ({
+    id,
+    radius,
+    height,
+    position,
+    mesh,
+    material,
+    mass = 1,
+  }) => {
+    let capsuleMesh = mesh;
+    if (!capsuleMesh) {
+      const capsuleGeometry = new THREE.CapsuleGeometry(
+        radius,
+        height - radius * 2,
+        5,
+        5
+      );
+      const capsuleMaterial = material ?? new THREE.MeshPhongMaterial();
+      capsuleMesh = new THREE.Mesh(capsuleGeometry, capsuleMaterial);
+      capsuleMesh.castShadow = true;
+      capsuleMesh.receiveShadow = true;
+    }
+    capsuleMesh.position.copy(position);
+
+    const collisionListeners = [];
+    const capsule = {
+      id: id ?? getUniqueId(),
+      mass,
+      mesh: capsuleMesh,
+      collider: new Capsule(
+        new THREE.Vector3(0, radius, 0),
+        new THREE.Vector3(0, height, 0),
+        radius
+      ),
+      radius,
+      height,
+      velocity: new THREE.Vector3(),
+      collisionListeners,
+      isColliding: false,
+      onGround: false,
+      on: {
+        collision: (callback) => collisionListeners.push(callback),
+      },
+    };
+
+    capsules.push(capsule);
+
+    return capsule;
   };
 
   const spheresCollisions = () => {
@@ -81,9 +133,7 @@ const create = ({ config: { gravity = 40 } }) => {
     }
   };
 
-  const update = ({ isPaused, delta }) => {
-    if (isPaused) return;
-
+  const updateSpheres = (delta) => {
     spheres.forEach((sphere) => {
       sphere.collider.center.addScaledVector(sphere.velocity, delta);
 
@@ -111,11 +161,63 @@ const create = ({ config: { gravity = 40 } }) => {
     );
   };
 
+  const capsuleCollisions = (capsule) => {
+    const result = worldOctree.capsuleIntersect(capsule.collider);
+    capsule.onGround = false;
+
+    if (result) {
+      capsule.isColliding = true;
+      capsule.onGround = result.normal.y > 0;
+      if (!capsule.onGround) {
+        capsule.velocity.addScaledVector(
+          result.normal,
+          -result.normal.dot(capsule.velocity)
+        );
+      }
+
+      capsule.collider.translate(result.normal.multiplyScalar(result.depth));
+    }
+  };
+
+  const updateCapsules = (delta) => {
+    capsules.forEach((capsule) => {
+      let damping = Math.exp(-8 * delta) - 1;
+      if (!capsule.onGround) {
+        capsule.velocity.y -= gravity * capsule.mass * delta;
+        damping *= 0.1;
+      }
+
+      /**
+       * Solve total collision in multiple steps to avoid wall collision issues
+       */
+      const stepCount = 3;
+      capsule.velocity.addScaledVector(capsule.velocity.clone(), damping);
+      const deltaPosition = capsule.velocity.clone().multiplyScalar(delta);
+      const velocityStep = deltaPosition.clone().divideScalar(stepCount);
+      for (let i = 0; i < stepCount; i++) {
+        capsule.collider.translate(velocityStep);
+        capsuleCollisions(capsule);
+      }
+    });
+
+    capsules.forEach(({ mesh, collider, radius }) => {
+      collider.getCenter(mesh.position);
+      mesh.position.y -= radius / 2;
+    });
+  };
+
+  const update = ({ isPaused, delta }) => {
+    if (isPaused) return;
+
+    updateSpheres(delta);
+    updateCapsules(delta);
+  };
+
   const dispose = () => {
     spheres = [];
   };
 
-  return { worldOctree, update, createSphere, dispose };
+  return { worldOctree, update, createSphere, createCapsule, dispose };
 };
 
 export const octreeModule = {

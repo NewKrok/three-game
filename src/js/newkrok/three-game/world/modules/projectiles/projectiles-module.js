@@ -94,10 +94,12 @@ const create = ({ world: { scene, cycleData }, config }) => {
 
   const dispose = () => {
     projectiles.forEach(({ mesh }) => {
-      mesh.dispose();
-      mesh.material.dispose();
-      mesh.geometry.dispose();
-      scene.remove(mesh);
+      if (mesh) {
+        mesh.dispose?.();
+        mesh.material?.dispose();
+        mesh.geometry?.dispose();
+        scene.remove(mesh);
+      }
     });
 
     collisionDetectors = null;

@@ -1,5 +1,6 @@
 import { ButtonKey } from "@newkrok/three-game/src/js/newkrok/three-game/control/gamepad.js";
 import { Key } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard-manager.js";
+import { UnitModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
 export const PlayerActionId = {
   PAUSE: "PAUSE",
@@ -81,7 +82,11 @@ export const unitControllerConfig = {
     {
       actionId: PlayerActionId.JUMP,
       callback: ({ target }) => {
-        if (target.onGround) target.jump();
+        const octreeBehaviorModule = target.getModule?.(
+          UnitModuleId.OCTREE_BEHAVIOR
+        );
+        if (octreeBehaviorModule?.properties.capsule.onGround)
+          octreeBehaviorModule.jump(target.config.jumpForce);
       },
     },
   ],

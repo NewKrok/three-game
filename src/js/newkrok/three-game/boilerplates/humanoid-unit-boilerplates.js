@@ -1,3 +1,5 @@
+import { UnitModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
+import { action2DModule } from "@newkrok/three-game/src/js/newkrok/three-game/world/modules/units/unit/modules/action-2d/action-2d-module.js";
 import { basicUnit } from "./unit-boilerplates";
 
 export const HumanoidUnitAnimationId = {
@@ -37,14 +39,24 @@ export const ToolType = {
   RIFLE: "RIFLE",
 };
 
-export const humanoidAnimationConfig = {
-  createCache: ({ velocity, getSelectedTool }) => {
+export const humanoidShooterAnimationConfig = {
+  createCache: ({ getModule, getSelectedTool }) => {
+    const {
+      onGround,
+      inAirTime,
+      isJumpTriggered,
+      capsule: { velocity },
+    } = getModule(UnitModuleId.OCTREE_BEHAVIOR).properties;
+
     const flatVelocity = velocity.clone();
     flatVelocity.y = 0;
     const horizontalVelocity = flatVelocity.length();
     const selectedToolType = getSelectedTool()?.type;
 
     return {
+      onGround,
+      inAirTime,
+      isJumpTriggered,
       horizontalVelocity,
       usePistol: selectedToolType === ToolType.PISTOL,
       useRifle: selectedToolType === ToolType.RIFLE,
@@ -53,10 +65,7 @@ export const humanoidAnimationConfig = {
   rules: [
     {
       condition: ({
-        onGround,
-        inAirTime,
-        isJumpTriggered,
-        cache: { usePistol, useRifle },
+        cache: { usePistol, useRifle, onGround, inAirTime, isJumpTriggered },
       }) =>
         ((!onGround && inAirTime > 200) || isJumpTriggered) &&
         (usePistol || useRifle),
@@ -65,7 +74,7 @@ export const humanoidAnimationConfig = {
       loop: true,
     },
     {
-      condition: ({ onGround, inAirTime, isJumpTriggered }) =>
+      condition: ({ cache: { onGround, inAirTime, isJumpTriggered } }) =>
         (!onGround && inAirTime > 200) || isJumpTriggered,
       animation: HumanoidUnitAnimationId.JUMP_LOOP,
       transitionTime: 0.2,
@@ -270,8 +279,32 @@ export const humanoidAnimationConfig = {
   ],
 };
 
-export const humanoidUnit = {
+export const rtsAnimationConfig = {
+  rules: [
+    {
+      condition: () => true,
+      animation: HumanoidUnitAnimationId.IDLE,
+      transitionTime: 0.2,
+      loop: true,
+    },
+    {
+      condition: ({ cache: { horizontalVelocity } }) => horizontalVelocity > 4,
+      animation: HumanoidUnitAnimationId.RUN,
+      transitionTime: 0.2,
+      loop: true,
+    },
+  ],
+};
+
+export const humanoidShooterUnit = {
   ...basicUnit,
-  name: "Humanoid Unit",
-  animationConfig: humanoidAnimationConfig,
+  name: "Humanoid shooter unit",
+  animationConfig: humanoidShooterAnimationConfig,
+};
+
+export const rtsUnit = {
+  ...basicUnit,
+  modules: [action2DModule],
+  name: "RTS unit",
+  animationConfig: rtsAnimationConfig,
 };

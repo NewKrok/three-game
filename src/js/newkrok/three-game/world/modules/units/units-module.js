@@ -1,24 +1,25 @@
 import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
-import { createUnit } from "../../../unit/unit.js";
-import { updateUnitAnimation } from "../../../unit/unit-animation.js";
+import { createUnit } from "@newkrok/three-game/src/js/newkrok/three-game/world/modules/units/unit/unit.js";
+import { updateUnitAnimation } from "@newkrok/three-game/src/js/newkrok/three-game/world/modules/units/unit/unit-animation.js";
 
 const create = ({ world, config: {} }) => {
   let units = [];
 
   const _createUnit = ({ id, config, position, rotation }) => {
-    createUnit({
+    const unit = createUnit({
       world,
       id,
       position: typeof position === "function" ? position(world) : position,
       rotation: typeof rotation === "function" ? rotation(world) : rotation,
       config,
       getWorldModule: world.getModule,
-      onComplete: (unit) => {
-        world.scene.add(unit.model);
-        units.push(unit);
-      },
     });
+
+    world.scene.add(unit.model);
+    units.push(unit);
+
+    return unit;
   };
 
   const update = ({ delta }) => {
@@ -26,7 +27,7 @@ const create = ({ world, config: {} }) => {
     units.forEach((unit) => {
       // TODO updateUnitAnimation could be part of a unit animation module
       if (!cycleData.isPaused) updateUnitAnimation({ delta: delta, unit });
-      unit.update(delta, cycleData);
+      unit.update({ ...cycleData, delta });
     });
   };
 

@@ -1,6 +1,9 @@
 import * as THREE from "three";
 
-import { UnitModuleId, WorldModuleId } from "../../../modules/module-enums.js";
+import {
+  UnitModuleId,
+  WorldModuleId,
+} from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
 
 import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 
@@ -11,6 +14,7 @@ const create = ({ world: { getModule }, unit, config: {} }) => {
   let right = 0;
   let isControlPaused = false;
   let tpsCamera;
+  let octreeBehavior;
 
   return {
     setForwardValue: (value) => (forward = value),
@@ -22,6 +26,11 @@ const create = ({ world: { getModule }, unit, config: {} }) => {
     update: ({ isPaused, delta }) => {
       if (!tpsCamera) {
         tpsCamera = getModule(WorldModuleId.THIRD_PERSON_CAMERA);
+        return;
+      }
+
+      if (!octreeBehavior) {
+        octreeBehavior = unit.getModule(UnitModuleId.OCTREE_BEHAVIOR);
         return;
       }
 
@@ -129,7 +138,7 @@ const create = ({ world: { getModule }, unit, config: {} }) => {
           );
         }
         if (forward || backward || left || right)
-          unit.addVelocity(relativeVector);
+          octreeBehavior.addVelocity(relativeVector);
       }
     },
   };
