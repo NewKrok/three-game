@@ -24,6 +24,7 @@ const DEFAULT_WORLD_CONFIG = {
   skybox: {
     size: 200,
     textures: [],
+    fog: false,
   },
   renderer: {
     antialias: true,
@@ -46,7 +47,7 @@ const DEFAULT_WORLD_CONFIG = {
   onLoaded: null,
 };
 
-export const createWorld = ({ target, worldConfig }) => {
+export const createWorld = ({ target, worldConfig, verbose = false }) => {
   const normalizedWorldConfig = ObjectUtils.patchObject(
     DEFAULT_WORLD_CONFIG,
     worldConfig
@@ -62,6 +63,7 @@ export const createWorld = ({ target, worldConfig }) => {
   const resumeCallbacks = [];
   const disposeCallbacks = [];
 
+  let requestAnimationFrameId;
   let _camera = new THREE.PerspectiveCamera();
 
   const cycleData = {
@@ -121,7 +123,7 @@ export const createWorld = ({ target, worldConfig }) => {
 
   const animate = () => {
     update();
-    requestAnimationFrame(animate);
+    requestAnimationFrameId = requestAnimationFrame(animate);
   };
 
   const onWindowResize = () => {
@@ -172,6 +174,7 @@ export const createWorld = ({ target, worldConfig }) => {
       AssetsUtils.loadAssets({
         ...normalizedAssetsConfig,
         onProgress: normalizedWorldConfig.onProgress,
+        verbose,
       }).then(() => {
         const world = {
           renderer,
@@ -184,6 +187,7 @@ export const createWorld = ({ target, worldConfig }) => {
           getModule: moduleHandler.getModule,
           addModule: moduleHandler.addModule,
           dispose: () => {
+            cancelAnimationFrame(requestAnimationFrameId);
             window.removeEventListener("resize", onWindowResize);
             window.removeEventListener("visibilitychange", onVisibilityChange);
             AssetsUtils.disposeAssets();
@@ -264,6 +268,7 @@ const applyConfigToWorld = ({ world, staticModels, worldConfig }) => {
         new THREE.MeshBasicMaterial({
           map: AssetsUtils.getTexture(textureId),
           side: THREE.BackSide,
+          fog: worldConfig.skybox.fog,
         })
     );
 
