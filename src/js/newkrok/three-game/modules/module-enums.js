@@ -11,6 +11,7 @@ export const WorldModuleId = {
   NAPE: "NAPE",
   NAPE_CAR: "NAPE_CAR",
   HEIGHTMAP: "HEIGHTMAP",
+  FOLIAGE: "FOLIAGE",
 };
 
 export const UnitModuleId = {
