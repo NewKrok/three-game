@@ -10,6 +10,7 @@ export const WorldModuleId = {
   THIRD_PERSON_CAMERA: "THIRD_PERSON_CAMERA",
   NAPE: "NAPE",
   NAPE_CAR: "NAPE_CAR",
+  HEIGHTMAP: "HEIGHTMAP",
 };
 
 export const UnitModuleId = {
