@@ -13,6 +13,7 @@ export const WorldModuleId = {
   HEIGHTMAP: "HEIGHTMAP",
   FOLIAGE: "FOLIAGE",
   WATER: "WATER",
+  ASTAR: "ASTAR",
 };
 
 export const UnitModuleId = {
