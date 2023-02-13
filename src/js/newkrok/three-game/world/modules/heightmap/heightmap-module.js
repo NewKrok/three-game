@@ -1,6 +1,9 @@
 import * as THREE from "three";
 
-import { isPointInATriangle, yFromTriangle } from "@newkrok/three-utils/src/js/newkrok/three-utils/geom-utils.js";
+import {
+  isPointInATriangle,
+  yFromTriangle,
+} from "@newkrok/three-utils/src/js/newkrok/three-utils/geom-utils.js";
 
 import { CallLimits } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 import { ImprovedNoise } from "three/addons/math/improvednoise.js";
@@ -11,27 +14,36 @@ const create = () => {
   let objects = [];
 
   const generate = () => {
-    const {width, depth, resolution, elevationRatio} = heightmapConfig;
-    resolutionRatio = {width: width / (resolution.width -1), depth: depth / (resolution.depth-1)};
+    const { width, depth, resolution, elevationRatio } = heightmapConfig;
+    resolutionRatio = {
+      width: width / (resolution.width - 1),
+      depth: depth / (resolution.depth - 1),
+    };
 
     geometry = new THREE.PlaneGeometry(
       width,
       depth,
       resolution.width - 1,
-      resolution.depth - 1,
+      resolution.depth - 1
     );
-    
+
     const vertices = geometry.attributes.position.array;
     for (let i = 0, j = 0, l = vertices.length; i < l; i++, j += 3) {
       vertices[j + 2] = heightmap[i] * elevationRatio;
     }
     geometry.attributes.position.needsUpdate = true;
     geometry.computeVertexNormals();
-  }
+  };
 
-   const createFromNoise = ({width, depth, resolution, elevationRatio, seed}) => {
-    heightmapConfig = {width, depth, resolution, elevationRatio}
-     const size = resolution.width * resolution.depth;
+  const createFromNoise = ({
+    width,
+    depth,
+    resolution,
+    elevationRatio,
+    seed,
+  }) => {
+    heightmapConfig = { width, depth, resolution, elevationRatio };
+    const size = resolution.width * resolution.depth;
     heightmap = new Uint8Array(size);
     const perlin = new ImprovedNoise();
     const z = seed ?? Math.random() * 100;
@@ -42,29 +54,34 @@ const create = () => {
       for (let i = 0; i < size; i++) {
         const x = i % resolution.width,
           y = ~~(i / resolution.width);
-          heightmap[i] += Math.abs(
+        heightmap[i] += Math.abs(
           perlin.noise(x / quality, y / quality, z) * quality * 1.75
         );
       }
       quality *= 5;
-    } 
+    }
 
     generate();
-  }
+  };
 
   const addObject = (object) => objects.push(object);
-  const removeObject = (object) => objects = objects.filter(entry => entry != object);
+  const removeObject = (object) =>
+    (objects = objects.filter((entry) => entry != object));
 
   const roundPosition = ({ x, z }) => ({
     x: Math.floor(x / resolutionRatio.width),
     z: Math.floor(z / resolutionRatio.depth),
   });
-  
-  const positionToHeightMapIndex = (x, z) => x + z * heightmapConfig.resolution.width;
+
+  const positionToHeightMapIndex = (x, z) =>
+    x + z * heightmapConfig.resolution.width;
 
   const getHeightFromPosition = (position) => {
     const roundedPosition = roundPosition(position);
-    const convertedPosition = {x:roundedPosition.x * resolutionRatio.width, z:roundedPosition.z * resolutionRatio.depth};
+    const convertedPosition = {
+      x: roundedPosition.x * resolutionRatio.width,
+      z: roundedPosition.z * resolutionRatio.depth,
+    };
 
     const pLT = {
       x: convertedPosition.x,
@@ -95,16 +112,13 @@ const create = () => {
       z: convertedPosition.z + resolutionRatio.depth,
       y:
         heightmap[
-          positionToHeightMapIndex(
-            roundedPosition.x + 1,
-            roundedPosition.z + 1
-          )
+          positionToHeightMapIndex(roundedPosition.x + 1, roundedPosition.z + 1)
         ] || position.y,
     };
 
-    var triangleCheckA = isPointInATriangle(position, pLT, pRT, pLB);
-    var triangleCheckB = isPointInATriangle(position, pRT, pRB, pLB);
-    const {elevationRatio} = heightmapConfig;
+    const triangleCheckA = isPointInATriangle(position, pLT, pRT, pLB);
+    const triangleCheckB = isPointInATriangle(position, pRT, pRB, pLB);
+    const { elevationRatio } = heightmapConfig;
     if (triangleCheckA) {
       return yFromTriangle(position, pLT, pRT, pLB) * elevationRatio;
     } else if (triangleCheckB) {
@@ -113,17 +127,59 @@ const create = () => {
     return 0;
   };
 
+  const getImage = () => {
+    const { width, depth, resolution } = heightmapConfig;
+    resolutionRatio = {
+      width: width / (resolution.width - 1),
+      depth: depth / (resolution.depth - 1),
+    };
+
+    let context, image, imageData;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = resolution.width;
+    canvas.height = resolution.depth;
+
+    context = canvas.getContext("2d");
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, width, depth);
+
+    image = context.getImageData(0, 0, canvas.width, canvas.height);
+    imageData = image.data;
+
+    for (let i = 0, j = 0, l = imageData.length; i < l; i += 4, j++) {
+      imageData[i] = heightmap[j];
+      imageData[i + 1] = heightmap[j];
+      imageData[i + 2] = heightmap[j];
+    }
+
+    context.putImageData(image, 0, 0);
+
+    return canvas;
+  };
+
   const update = ({ isPaused }) => {
     if (isPaused) return;
 
-    objects.forEach(object => object.position.y = getHeightFromPosition(object.position));
+    objects.forEach(
+      (object) => (object.position.y = getHeightFromPosition(object.position))
+    );
   };
 
   const dispose = () => {
-    objects = null
+    objects = null;
   };
 
-  return { update, createFromNoise, getGeometry:()=>geometry, addObject, removeObject, getHeightFromPosition, dispose };
+  return {
+    update,
+    createFromNoise,
+    getImage,
+    getGeometry: () => geometry,
+    addObject,
+    removeObject,
+    getHeightFromPosition,
+    dispose,
+  };
 };
 
 export const heightmapModule = {

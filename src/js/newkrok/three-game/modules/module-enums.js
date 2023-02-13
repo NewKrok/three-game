@@ -14,6 +14,7 @@ export const WorldModuleId = {
   FOLIAGE: "FOLIAGE",
   WATER: "WATER",
   ASTAR: "ASTAR",
+  DISTANCE_KEEPER: "DISTANCE_KEEPER",
 };
 
 export const UnitModuleId = {
@@ -21,4 +22,5 @@ export const UnitModuleId = {
   ABILITIES: "ABILITIES",
   TPS_MOVEMENT: "TPS_MOVEMENT",
   OCTREE_BEHAVIOR: "OCTREE_BEHAVIOR",
+  ACTION_2D: "ACTION_2D",
 };

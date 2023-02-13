@@ -16,7 +16,7 @@ const create = ({ world, config: {} }) => {
       getWorldModule: world.getModule,
     });
 
-    world.scene.add(unit.model);
+    world.scene.add(unit.container);
     units.push(unit);
 
     return unit;

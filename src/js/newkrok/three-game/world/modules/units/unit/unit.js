@@ -60,6 +60,7 @@ const DefaultSockets = [
 ];
 
 export const createUnit = ({ world, id, position, rotation, config }) => {
+  const container = new THREE.Object3D();
   const instanceId = getUniqueId();
   const moduleHandler = createModuleHandler(config.modules);
 
@@ -78,7 +79,8 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
     ? fbx.children[config.model.fbx.childIndex]
     : fbx;
   model.scale.copy(config.model.scale);
-  if (position) model.position.copy(position);
+  container.add(model);
+  if (position) container.position.copy(position);
 
   // TODO: should be configurable?
   /*
@@ -148,14 +150,14 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
 
   const update = (cycleData) => {
     box.min.set(
-      -config.radius + model.position.x,
-      0 + model.position.y,
-      -config.radius + model.position.z
+      -config.radius + container.position.x,
+      0 + container.position.y,
+      -config.radius + container.position.z
     );
     box.max.set(
-      config.radius + model.position.x,
-      config.height + model.position.y,
-      config.radius + model.position.z
+      config.radius + container.position.x,
+      config.height + container.position.y,
+      config.radius + container.position.z
     );
 
     moduleHandler.update(cycleData);
@@ -163,7 +165,7 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
 
   const setRotation = (value) => {
     unit.viewRotation = value;
-    model.rotation.y = Math.PI - unit.viewRotation + Math.PI;
+    container.rotation.y = Math.PI - unit.viewRotation + Math.PI;
   };
 
   const registerObjectIntoSocket = (props) => {
@@ -185,7 +187,7 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
     Object.values(registeredObjects).forEach(({ object }) =>
       deepDispose(object)
     );
-    deepDispose(model);
+    deepDispose(container);
     moduleHandler.dispose();
   };
 
@@ -193,6 +195,7 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
     getModule: moduleHandler.getModule,
     addModule: moduleHandler.addModule,
     addModules: (modules) => modules.forEach(moduleHandler.addModule),
+    container,
     model,
     collider: null,
     config,
@@ -207,17 +210,17 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
     viewRotation: 0,
     targetRotation: 0,
     getForwardVector: () => {
-      model.getWorldDirection(playerDirection);
-      playerDirection.y = 0;
-      playerDirection.normalize();
-      return playerDirection;
+      container.getWorldDirection(unit.playerDirection);
+      unit.playerDirection.y = 0;
+      unit.playerDirection.normalize();
+      return unit.playerDirection;
     },
     getSideVector: () => {
-      model.getWorldDirection(playerDirection);
-      playerDirection.y = 0;
-      playerDirection.normalize();
-      playerDirection.cross(model.up);
-      return playerDirection;
+      container.getWorldDirection(unit.playerDirection);
+      unit.playerDirection.y = 0;
+      unit.playerDirection.normalize();
+      unit.playerDirection.cross(container.up);
+      return unit.playerDirection;
     },
     setRotation,
     update,

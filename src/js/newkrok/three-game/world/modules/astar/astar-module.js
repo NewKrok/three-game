@@ -71,14 +71,19 @@ const create = ({ config: { useCache } }) => {
       buildIslands();
     };
 
+    const hasIslandMatch = (from, to) => {
+      const fromNodeKey = `${from[0]}-${from[1]}`;
+      const toNodeKey = `${to[0]}-${to[1]}`;
+      const fromIsland = islands.find((island) => island.nodes[fromNodeKey]);
+
+      return !fromIsland || fromIsland.nodes[toNodeKey];
+    };
+
     const search = (from, to) => {
       if (useCache && cache[mapId]?.[from]?.[to]) return cache[mapId][from][to];
       let path;
 
-      const fromNodeKey = `${from[0]}-${from[1]}`;
-      const toNodeKey = `${to[0]}-${to[1]}`;
-      const fromIsland = islands.find((island) => island.nodes[fromNodeKey]);
-      if (fromIsland.nodes[toNodeKey]) {
+      if (hasIslandMatch(from, to)) {
         path = map.search(from, to, {
           rightAngle: !enableDiagonalMovement,
         });
@@ -121,6 +126,7 @@ const create = ({ config: { useCache } }) => {
           addObstacles,
           removeObstacles,
           search,
+          hasIslandMatch,
         });
       });
     });

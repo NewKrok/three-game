@@ -1,4 +1,5 @@
 import { UnitModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-enums.js";
+import { UnitState } from "@newkrok/three-game/src/js/newkrok/three-game/world/modules/units/unit/modules/action-2d/action-2d-module.js";
 import { action2DModule } from "@newkrok/three-game/src/js/newkrok/three-game/world/modules/units/unit/modules/action-2d/action-2d-module.js";
 import { basicUnit } from "./unit-boilerplates";
 
@@ -280,16 +281,26 @@ export const humanoidShooterAnimationConfig = {
 };
 
 export const rtsAnimationConfig = {
+  createCache: ({ getModule }) => {
+    const { isSliding, movementVector } = getModule(
+      UnitModuleId.ACTION_2D
+    ).properties;
+
+    return {
+      isSliding,
+      speed: movementVector.manhattanLength(),
+    };
+  },
   rules: [
     {
-      condition: () => true,
-      animation: HumanoidUnitAnimationId.IDLE,
+      condition: ({ cache: { speed, isSliding } }) => isSliding || speed > 0.01,
+      animation: HumanoidUnitAnimationId.WALK,
       transitionTime: 0.2,
       loop: true,
     },
     {
-      condition: ({ cache: { horizontalVelocity } }) => horizontalVelocity > 4,
-      animation: HumanoidUnitAnimationId.RUN,
+      condition: () => true,
+      animation: HumanoidUnitAnimationId.IDLE,
       transitionTime: 0.2,
       loop: true,
     },
