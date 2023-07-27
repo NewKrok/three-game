@@ -17,6 +17,11 @@ export const WorldModuleId = {
   DISTANCE_KEEPER: "DISTANCE_KEEPER",
 };
 
+export const UnitsModuleId = {
+  TARGET_SELECTOR: "TARGET_SELECTOR",
+  SIMPLE_AI: "SIMPLE_AI",
+};
+
 export const UnitModuleId = {
   AIMING: "AIMING",
   ABILITIES: "ABILITIES",
