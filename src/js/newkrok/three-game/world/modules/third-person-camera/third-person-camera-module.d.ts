@@ -7,6 +7,8 @@ export type ThirdPersonCameraModule = {
   getTarget: () => THREE.Object3D;
   setTargetQuaternionOffset: (quaternion: Quaternion) => void;
   setPositionOffset: (offset: THREE.Vector3) => void;
+  getUseTargetRotation: () => boolean;
+  setUseTargetRotation: (value: boolean) => void;
 };
 
 export const thirdPersonCameraModule: ModuleConfig<ThirdPersonCameraModule>;
