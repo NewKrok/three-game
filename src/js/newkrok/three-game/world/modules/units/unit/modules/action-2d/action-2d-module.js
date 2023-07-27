@@ -26,6 +26,7 @@ const create = ({ unit }) => {
       path: [],
       target: null,
     },
+    nearestTarget: null,
     lastVisitedPosition: unit.container.position.clone().floor(),
     movementVector: new THREE.Vector3(),
     isSliding: false,
@@ -35,7 +36,6 @@ const create = ({ unit }) => {
 
   const instance = {};
   let moveEndHandlers = [];
-  let nearestTarget = null;
   let currentPathIndex = 0;
 
   const moveToNextPathPoint = () => {
@@ -51,33 +51,25 @@ const create = ({ unit }) => {
         properties.commandValues.target &&
         properties.commandValues.target.properties.state !== UnitState.DEAD
       ) {
-        /* var currentTargetWorldPosition = target.getWorldPoint();
-				if (
-					properties.state !== UnitState.AttackTriggered
-					&& lastTargetWorldPosition.x == currentTargetWorldPosition.x
-					&& lastTargetWorldPosition.y == currentTargetWorldPosition.y)
-				{
-					var couldTriggerAttack = attackRoutine();
-					if (couldTriggerAttack) return;
-				}
-				else
-				{
-					attackRequest();
-					return;
-				} */
+        if (properties.state !== UnitState.ATTACK_TRIGGERED) {
+          /*let couldTriggerAttack  = attackRoutine();
+          if (couldTriggerAttack) return;*/
+        } else {
+          //attackRequest();
+          return;
+        }
       }
       //move(moveToNextPathPoint);
     } else if (
       properties.commandValues.target &&
       properties.commandValues.target.properties.state !==
-        UnitState.AttackTriggered
+        UnitState.ATTACK_TRIGGERED
     ) {
-      if (properties.commandValues.target.properties.state != UnitState.Dead) {
-        /* var couldTriggerAttack = attackRoutine();
-				if (!couldTriggerAttack)
-				{
-					moveToRequest(target.getWorldPoint());
-				} */
+      if (properties.commandValues.target.properties.state !== UnitState.DEAD) {
+        /*let couldTriggerAttack = attackRoutine();
+        if (!couldTriggerAttack) {
+          moveToRequest(target.getWorldPoint());
+        }*/
       }
     } else {
       onMoveEnd();
@@ -113,7 +105,7 @@ const create = ({ unit }) => {
       )
     ) {
       properties.commandValues.target = null;
-      nearestTarget = null;
+      properties.nearestTarget = null;
       onMoveEnd();
     }
 
@@ -126,6 +118,12 @@ const create = ({ unit }) => {
     properties.command = Command.MOVE_TO;
     properties.commandValues.path = path;
     triggerMoveTo(path);
+  };
+
+  const teleportTo = (position) => {
+    unit.container.position.copy(position);
+    properties.command = Command.NOTHING;
+    onMoveEnd();
   };
 
   const move = () => {
@@ -214,6 +212,7 @@ const create = ({ unit }) => {
     properties,
     attackMoveTo,
     moveTo,
+    teleportTo,
     update,
     on,
     off,
