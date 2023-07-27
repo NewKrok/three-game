@@ -31,8 +31,7 @@ const DEFAULT_WORLD_CONFIG = {
     pixelRatio: 1,
     clearColor: 0x000000,
     clearColorOpacity: 1,
-    outputEncoding: THREE.sRGBEncoding,
-    physicallyCorrectLights: false,
+    outputColorSpace: THREE.SRGBColorSpace,
     toneMapping: THREE.ACESFilmicToneMapping,
     toneMappingExposure: 1,
     shadowMap: {
@@ -89,9 +88,7 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
     normalizedWorldConfig.renderer.clearColor,
     normalizedWorldConfig.renderer.clearColorOpacity
   );
-  renderer.outputEncoding = normalizedWorldConfig.renderer.outputEncoding;
-  renderer.physicallyCorrectLights =
-    normalizedWorldConfig.renderer.physicallyCorrectLights;
+  renderer.outputColorSpace = normalizedWorldConfig.renderer.outputColorSpace;
   renderer.toneMapping = normalizedWorldConfig.renderer.toneMapping;
   renderer.toneMappingExposure =
     normalizedWorldConfig.renderer.toneMappingExposure;
