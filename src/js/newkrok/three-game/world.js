@@ -174,6 +174,7 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
         verbose,
       }).then(() => {
         const world = {
+          skybox: null,
           renderer,
           camera: _camera,
           scene,
@@ -276,6 +277,7 @@ const applyConfigToWorld = ({ world, staticModels, worldConfig }) => {
     );
     const skybox = new THREE.Mesh(skyboxGeo, materialArray);
     scene.add(skybox);
+    world.skybox = skybox;
   }
 
   worldConfig.staticModels.forEach(({ id, modelId, position, rotation }) => {
