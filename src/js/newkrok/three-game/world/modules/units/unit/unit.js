@@ -6,6 +6,7 @@ import {
 } from "@newkrok/three-utils/src/js/newkrok/three-utils/assets/assets.js";
 
 import { ModelSocketId } from "@newkrok/three-game/src/js/newkrok/three-game/world/modules/units/unit/unit-enums.js";
+import { Player } from "@newkrok/three-game/src/js/newkrok/three-game/players/players-enums.js";
 import { createModuleHandler } from "@newkrok/three-game/src/js/newkrok/three-game/modules/module-handler.js";
 import { deepDispose } from "@newkrok/three-utils/src/js/newkrok/three-utils/dispose-utils.js";
 import { getUniqueId } from "@newkrok/three-utils/src/js/newkrok/three-utils/token.js";
@@ -59,7 +60,7 @@ const DefaultSockets = [
   },
 ];
 
-export const createUnit = ({ world, id, position, rotation, config }) => {
+export const createUnit = ({ world, id, owner = Player.PLAYER_1, position, rotation, config }) => {
   const container = new THREE.Object3D();
   const instanceId = getUniqueId();
   const moduleHandler = createModuleHandler(config.modules);
@@ -189,6 +190,7 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
     );
     deepDispose(container);
     moduleHandler.dispose();
+    moduleHandler = null;
   };
 
   Object.assign(unit, {
@@ -199,6 +201,7 @@ export const createUnit = ({ world, id, position, rotation, config }) => {
     model,
     collider: null,
     config,
+    owner,
     mixer,
     isDead: false,
     hasAnimation: true,
