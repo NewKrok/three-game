@@ -4,6 +4,7 @@ import {
 } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 
 export const createModuleHandler = (modules) => {
+  const _moduleCache = {};
   const _modules = [];
   let customProps = {};
 
@@ -20,10 +21,16 @@ export const createModuleHandler = (modules) => {
       customProps = props;
       modules.forEach((module) => addModule(module));
     },
-    getModule: (idOrSelector) =>
-      typeof idOrSelector === "function"
+    getModule: (idOrSelector) => {
+      if (_moduleCache[idOrSelector]) return _moduleCache[idOrSelector];
+
+      const module = typeof idOrSelector === "function"
         ? _modules.find(idOrSelector)
-        : _modules.find(({ id }) => id === idOrSelector),
+        : _modules.find(({ id }) => id === idOrSelector);
+
+      _moduleCache[idOrSelector] = module;
+      return module;
+    },
     addModule,
     update: (cycleData) =>
       _modules.forEach((module) => {
@@ -48,6 +55,10 @@ export const createModuleHandler = (modules) => {
           } else module.update(cycleData);
         }
       }),
-    dispose: () => _modules.forEach((module) => module.dispose?.()),
+    dispose: () => {
+      _modules.forEach((module) => module.dispose?.());
+      _modules = null;
+      _moduleCache = null;
+    }
   };
 };
