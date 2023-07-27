@@ -8,30 +8,37 @@ import { WorldModuleId } from "@newkrok/three-game/src/js/newkrok/three-game/mod
 import { createKeyboardManager } from "@newkrok/three-game/src/js/newkrok/three-game/control/keyboard-manager.js";
 import { createMouseManager } from "@newkrok/three-game/src/js/newkrok/three-game/control/mouse-manager.js";
 
-const create = ({ world, config: { actionConfig, handlers } }) => {
+const create = ({ world, config }) => {
+  const ref = {
+    trigger: null,
+  };
+  let actionStates = {};
   let isControlPaused = false;
   let target;
 
-  const trigger = ({ actionId, value }) => {
-    if (
-      (target && !world.cycleData.isPaused) ||
-      actionStates[actionId].enableDuringPause
-    )
-      handlers.forEach(
-        (entry) =>
-          entry.actionId === actionId &&
-          entry.callback({ target, value, world })
-      );
-  };
+  const setConfig = ({ actionConfig, handlers }) => {
+    actionStates = {};
+    ref.trigger = ({ actionId, value }) => {
+      if (
+        (target && !world.cycleData.isPaused) ||
+        actionStates[actionId].enableDuringPause
+      )
+        handlers.forEach(
+          (entry) =>
+            entry.actionId === actionId &&
+            entry.callback({ target, value, world })
+        );
+    };
 
-  const actionStates = {};
-  actionConfig.forEach((props) => {
-    if (props.customTrigger)
-      props.customTrigger((value) => {
-        trigger({ actionId: props.actionId, value });
-      });
-    actionStates[props.actionId] = { pressed: false, value: 0, ...props };
-  });
+    actionConfig.forEach((props) => {
+      if (props.customTrigger)
+        props.customTrigger((value) => {
+          ref.trigger({ actionId: props.actionId, value });
+        });
+      actionStates[props.actionId] = { pressed: false, value: 0, ...props };
+    });
+  };
+  if (config && config.actionConfig && config.handlers) setConfig(config);
 
   const keyboardManager = createKeyboardManager();
   const mouseManager = createMouseManager();
@@ -70,7 +77,7 @@ const create = ({ world, config: { actionConfig, handlers } }) => {
         newState.pressed &&
         newState.pressed != prevState.pressed)
     ) {
-      trigger({ actionId, value });
+      ref.trigger({ actionId, value });
     }
 
     return newState;
@@ -79,6 +86,7 @@ const create = ({ world, config: { actionConfig, handlers } }) => {
   return {
     setTarget: (value) => (target = value),
     getTarget: () => target,
+    setConfig,
     update: ({ isPaused }) => {
       if (isControlPaused) return;
       updateGamePad();
