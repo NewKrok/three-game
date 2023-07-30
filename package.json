@@ -1,6 +1,6 @@
 {
   "name": "@newkrok/three-game",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "ThreeJS based game engine",
   "main": "src/js/newkrok/three-game/world.js",
   "exports": {
