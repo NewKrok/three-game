@@ -58,9 +58,9 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
 
   const staticModels = [];
   const destroyables = [];
-  const pauseCallbacks = [];
-  const resumeCallbacks = [];
-  const disposeCallbacks = [];
+  let pauseCallbacks = [];
+  let resumeCallbacks = [];
+  let disposeCallbacks = [];
 
   let requestAnimationFrameId;
   let _camera = new THREE.PerspectiveCamera();

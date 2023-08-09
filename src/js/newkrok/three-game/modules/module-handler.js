@@ -4,8 +4,8 @@ import {
 } from "@newkrok/three-utils/src/js/newkrok/three-utils/callback-utils.js";
 
 export const createModuleHandler = (modules) => {
-  const _moduleCache = {};
-  const _modules = [];
+  let _moduleCache = {};
+  let _modules = [];
   let customProps = {};
 
   const addModule = ({ id, config, create }) => {

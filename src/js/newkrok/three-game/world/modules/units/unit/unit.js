@@ -63,7 +63,7 @@ const DefaultSockets = [
 export const createUnit = ({ world, id, owner = Player.PLAYER_1, position, rotation, config }) => {
   const container = new THREE.Object3D();
   const instanceId = getUniqueId();
-  const moduleHandler = createModuleHandler(config.modules);
+  let moduleHandler = createModuleHandler(config.modules);
 
   const sockets = {};
   const animations = [];
