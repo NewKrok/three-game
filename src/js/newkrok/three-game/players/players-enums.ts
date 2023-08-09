@@ -1,0 +1,12 @@
+export const enum Player {
+  PLAYER_1 = 'PLAYER_1',
+  PLAYER_2 = 'PLAYER_2',
+  PLAYER_3 = 'PLAYER_3',
+  PLAYER_4 = 'PLAYER_4',
+  PLAYER_5 = 'PLAYER_5',
+  PLAYER_6 = 'PLAYER_6',
+  PLAYER_7 = 'PLAYER_7',
+  PLAYER_8 = 'PLAYER_8',
+  PLAYER_9 = 'PLAYER_9',
+  PLAYER_10 = 'PLAYER_10'
+}

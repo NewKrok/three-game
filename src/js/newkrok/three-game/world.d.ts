@@ -3,7 +3,20 @@ export type AssetConfig = {
   url: string;
 };
 
-export type ModelConfig = AssetConfig & {};
+export type MaterialConfig = {
+  materialType: THREE.Material;
+  texture: {id: string};
+};
+
+export type CycleData = {
+  isPaused: boolean,
+  now: number,
+  delta: number,
+  elapsed:  number,
+  startTime: number,
+};
+
+export type ModelConfig = AssetConfig & {material?:MaterialConfig};
 
 export type AssetsConfig = {
   textures: Array<AssetConfig>;
@@ -18,17 +31,17 @@ export type SceneConfig = {
 };
 
 export type SkyboxConfig = {
-  size: number;
+  size?: number;
   textures: Array<string>;
-  fog: boolean;
+  fog?: boolean;
 };
 
 export type WorldConfig = {
-  assetsConfig: AssetConfig;
-  scene: SceneConfig;
-  fog: any;
-  skybox: SkyboxConfig;
-  onLoaded: (world: World) => void;
+  assetsConfig?: AssetsConfig;
+  scene?: SceneConfig;
+  fog?: any;
+  skybox?: SkyboxConfig;
+  onLoaded?: (world: World) => void;
 };
 
 export type World = {
@@ -36,6 +49,8 @@ export type World = {
   renderer: THREE.WebGLRenderer;
   camera: THREE.PerspectiveCamera;
   skybox?: THREE.Mesh;
+  resume: () => void;
+  pause: () => void;
 };
 
 export const createWorld: ({
