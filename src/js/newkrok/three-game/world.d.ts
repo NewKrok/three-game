@@ -47,7 +47,11 @@ export type WorldConfig = {
 export type World = {
   scene: THREE.Scene;
   renderer: THREE.WebGLRenderer;
+  effectComposer?: {
+    passes: Array<({scene:THREE.Scene, camera: THREE.PerspectiveCamera }) => any> | Array<any>,
+  }
   camera: THREE.PerspectiveCamera;
+  setCamera: (camera: THREE.PerspectiveCamera) => void;
   skybox?: THREE.Mesh;
   resume: () => void;
   pause: () => void;

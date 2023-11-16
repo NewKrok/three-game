@@ -2,7 +2,9 @@ import * as THREE from "three";
 
 import { AssetsUtils } from "@newkrok/three-utils/assets";
 import { DisposeUtils } from "@newkrok/three-utils";
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { ObjectUtils } from "@newkrok/three-utils";
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { createModuleHandler } from "./modules/module-handler.js";
 import { detect } from "detect-browser";
 
@@ -38,6 +40,9 @@ const DEFAULT_WORLD_CONFIG = {
       enabled: true,
       type: THREE.VSMShadowMap,
     },
+  },
+  effectComposer: {
+    passes: [],
   },
   entities: [],
   modules: [],
@@ -96,6 +101,17 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
   renderer.shadowMap.type = normalizedWorldConfig.renderer.shadowMap.type;
   target.appendChild(renderer.domElement);
 
+  let effectComposer;
+  if (normalizedWorldConfig.effectComposer?.passes.length) {
+    effectComposer = new EffectComposer(renderer);
+    const renderScene = new RenderPass( scene, _camera );
+    effectComposer.addPass( renderScene );
+
+    normalizedWorldConfig.effectComposer.passes.forEach((pass) => {
+      effectComposer.addPass(typeof pass === "function" ? pass({scene, camera: _camera}) : pass);
+    });
+  }
+
   scene.fog = normalizedWorldConfig.fog;
 
   const entities =
@@ -115,7 +131,11 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
     }
 
     onUpdateCallbacks.forEach((callback) => callback(cycleData));
-    renderer.render(scene, _camera);
+    
+    if (effectComposer)
+      effectComposer.render();
+    else
+      renderer.render(scene, _camera);
   };
 
   const animate = () => {
@@ -127,6 +147,7 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
     _camera.aspect = window.innerWidth / window.innerHeight;
     _camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    if (effectComposer) effectComposer.setSize( window.innerWidth, window.innerHeight );
   };
   window.addEventListener("resize", onWindowResize);
 
@@ -181,7 +202,10 @@ export const createWorld = ({ target, worldConfig, verbose = false }) => {
           cycleData,
           pause,
           resume,
-          setCamera: (camera) => (_camera = camera),
+          setCamera: (camera) => {
+            _camera = camera
+            if (effectComposer) effectComposer.passes.forEach(pass => pass.camera = _camera)
+          },
           getModule: moduleHandler.getModule,
           addModule: moduleHandler.addModule,
           dispose: () => {
