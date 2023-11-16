@@ -1,6 +1,6 @@
 {
   "name": "@newkrok/three-game",
-  "version": "4.1.1",
+  "version": "4.2.0",
   "description": "ThreeJS based game engine",
   "main": "src/js/newkrok/three-game/world.js",
   "exports": {
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/NewKrok/three-game#readme",
   "dependencies": {
-    "three": "^0.155.0",
+    "three": "^0.158.0",
     "@newkrok/three-utils": "^1.1.0",
     "@newkrok/nape-js": "^1.0.0",
     "fast-astar": "^1.0.6",
